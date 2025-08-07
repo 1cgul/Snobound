@@ -7,4 +7,4 @@ export interface User {
   role: UserRole;
 }
 
-export type ScreenType = 'login' | 'signup' | 'dashboard';
+export type ScreenType = 'login' | 'signup' | 'dashboard' | 'forgotPassword';

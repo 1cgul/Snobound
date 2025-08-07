@@ -19,10 +19,11 @@ interface LoginData {
 
 interface LoginScreenProps {
   onSwitchToSignup: () => void;
+  onSwitchToForgotPassword: () => void;
   onLoginSuccess: (email: string) => void;
 }
 
-export default function LoginScreen({ onSwitchToSignup, onLoginSuccess }: LoginScreenProps) {
+export default function LoginScreen({ onSwitchToSignup, onSwitchToForgotPassword, onLoginSuccess }: LoginScreenProps) {
   const [formData, setFormData] = useState<LoginData>({
     email: '',
     password: '',
@@ -104,6 +105,10 @@ export default function LoginScreen({ onSwitchToSignup, onLoginSuccess }: LoginS
 
             <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
               <Text style={styles.submitButtonText}>Hit the Slopes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.forgotPasswordButton} onPress={onSwitchToForgotPassword}>
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
 
             <View style={styles.switchContainer}>
@@ -201,5 +206,15 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  forgotPasswordButton: {
+    alignItems: 'center',
+    marginTop: 15,
+    padding: 5,
+  },
+  forgotPasswordText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

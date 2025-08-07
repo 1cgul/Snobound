@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import DashboardScreen from './screens/DashboardScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import { ScreenType, User, UserRole } from './types';
 
 export default function App() {
@@ -17,6 +18,10 @@ export default function App() {
 
   const handleSwitchToLogin = () => {
     setCurrentScreen('login');
+  };
+
+  const handleSwitchToForgotPassword = () => {
+    setCurrentScreen('forgotPassword');
   };
 
   const handleLoginSuccess = (email: string) => {
@@ -56,6 +61,7 @@ export default function App() {
         return (
           <LoginScreen
             onSwitchToSignup={handleSwitchToSignup}
+            onSwitchToForgotPassword={handleSwitchToForgotPassword}
             onLoginSuccess={handleLoginSuccess}
           />
         );
@@ -73,10 +79,17 @@ export default function App() {
             onLogout={handleLogout}
           />
         ) : null;
+      case 'forgotPassword':
+        return (
+          <ForgotPasswordScreen
+            onSwitchToLogin={handleSwitchToLogin}
+          />
+        );
       default:
         return (
           <LoginScreen
             onSwitchToSignup={handleSwitchToSignup}
+            onSwitchToForgotPassword={handleSwitchToForgotPassword}
             onLoginSuccess={handleLoginSuccess}
           />
         );
