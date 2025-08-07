@@ -12,20 +12,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-type UserRole = 'teacher' | 'learner';
-
 interface SignupData {
   firstName: string;
   lastName: string;
   email: string;
   password: string;
   confirmPassword: string;
-  role?: UserRole;
 }
 
 interface SignupScreenProps {
   onSwitchToLogin: () => void;
-  onSignupSuccess: (firstName: string, lastName: string, email: string, role: UserRole) => void;
+  onSignupSuccess: (firstName: string, lastName: string, email: string) => void;
 }
 
 export default function SignupScreen({ onSwitchToLogin, onSignupSuccess }: SignupScreenProps) {
@@ -35,10 +32,9 @@ export default function SignupScreen({ onSwitchToLogin, onSignupSuccess }: Signu
     email: '',
     password: '',
     confirmPassword: '',
-    role: undefined,
   });
 
-  const handleInputChange = (field: keyof SignupData, value: string | UserRole) => {
+  const handleInputChange = (field: keyof SignupData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -59,10 +55,7 @@ export default function SignupScreen({ onSwitchToLogin, onSignupSuccess }: Signu
       return false;
     }
 
-    if (!formData.role) {
-      Alert.alert('Error', 'Please select if you want to teach or learn');
-      return false;
-    }
+
 
     if (formData.password !== formData.confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
@@ -75,9 +68,8 @@ export default function SignupScreen({ onSwitchToLogin, onSignupSuccess }: Signu
   const handleSubmit = () => {
     if (!validateForm()) return;
 
-    const roleText = formData.role === 'teacher' ? 'teaching' : 'learning';
-    Alert.alert('Success', `Welcome to Snobound, ${formData.firstName}! Ready to start ${roleText}?`);
-    onSignupSuccess(formData.firstName, formData.lastName, formData.email, formData.role!);
+    
+    onSignupSuccess(formData.firstName, formData.lastName, formData.email);
 
     // Reset form
     setFormData({
@@ -86,7 +78,6 @@ export default function SignupScreen({ onSwitchToLogin, onSignupSuccess }: Signu
       email: '',
       password: '',
       confirmPassword: '',
-      role: undefined,
     });
   };
 
@@ -123,41 +114,6 @@ export default function SignupScreen({ onSwitchToLogin, onSignupSuccess }: Signu
                 placeholder="Enter your last name"
                 autoCapitalize="words"
               />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>I want to...</Text>
-              <View style={styles.roleContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.roleButton,
-                    formData.role === 'teacher' && styles.roleButtonSelected
-                  ]}
-                  onPress={() => handleInputChange('role', 'teacher')}
-                >
-                  <Text style={[
-                    styles.roleButtonText,
-                    formData.role === 'teacher' && styles.roleButtonTextSelected
-                  ]}>
-                    🎿 Teach others
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[
-                    styles.roleButton,
-                    formData.role === 'learner' && styles.roleButtonSelected
-                  ]}
-                  onPress={() => handleInputChange('role', 'learner')}
-                >
-                  <Text style={[
-                    styles.roleButtonText,
-                    formData.role === 'learner' && styles.roleButtonTextSelected
-                  ]}>
-                    🏂 Learn from others
-                  </Text>
-                </TouchableOpacity>
-              </View>
             </View>
 
             <View style={styles.inputContainer}>
@@ -295,31 +251,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  roleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  roleButton: {
-    flex: 1,
-    borderWidth: 2,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 15,
-    alignItems: 'center',
-    backgroundColor: '#f9f9f9',
-  },
-  roleButtonSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#f0f8ff',
-  },
-  roleButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    textAlign: 'center',
-  },
-  roleButtonTextSelected: {
-    color: '#007AFF',
-  },
+
 });

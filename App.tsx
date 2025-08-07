@@ -6,7 +6,8 @@ import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
-import { ScreenType, User, UserRole } from './types';
+import ProfileSetupScreen from './screens/ProfileSetupScreen';
+import { ScreenType, User } from './types';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('login');
@@ -32,21 +33,31 @@ export default function App() {
       lastName: 'User',
       email: email,
       role: 'learner', // Default role for login
+      profileCompleted: true, // Assume existing users have completed profile
     };
     setUser(mockUser);
     setCurrentScreen('dashboard');
   };
 
-  const handleSignupSuccess = (firstName: string, lastName: string, email: string, role: UserRole) => {
+  const handleSignupSuccess = (firstName: string, lastName: string, email: string) => {
     // In a real app, you would create the user in your backend
     // For now, we'll create a mock user with the provided data
     const newUser: User = {
       firstName: firstName,
       lastName: lastName,
       email: email,
-      role: role,
+      profileCompleted: false,
     };
     setUser(newUser);
+    setCurrentScreen('profileSetup');
+  };
+
+  const handleProfileComplete = (updatedUser: User) => {
+    setUser(updatedUser);
+    setCurrentScreen('dashboard');
+  };
+
+  const handleSkipProfileSetup = () => {
     setCurrentScreen('dashboard');
   };
 
@@ -85,6 +96,14 @@ export default function App() {
             onSwitchToLogin={handleSwitchToLogin}
           />
         );
+      case 'profileSetup':
+        return user ? (
+          <ProfileSetupScreen
+            user={user}
+            onProfileComplete={handleProfileComplete}
+            onSkipForNow={handleSkipProfileSetup}
+          />
+        ) : null;
       default:
         return (
           <LoginScreen
