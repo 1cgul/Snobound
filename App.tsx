@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+// Initialize Firebase
+import './config/firebase';
 
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
@@ -12,6 +15,11 @@ import { ScreenType, User } from './types';
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('login');
   const [user, setUser] = useState<User | null>(null);
+
+  // Helper function to check if profile is complete
+  const isProfileComplete = (user: User): boolean => {
+    return !!(user.role && user.location && user.bio);
+  };
 
   const handleSwitchToSignup = () => {
     setCurrentScreen('signup');
@@ -27,28 +35,29 @@ export default function App() {
 
   const handleLoginSuccess = (email: string) => {
     // In a real app, you would get user data from your backend
-    // For now, we'll create a mock user
+    // For now, we'll create a mock user with complete profile
     const mockUser: User = {
       firstName: 'Demo',
       lastName: 'User',
       email: email,
-      role: 'learner', // Default role for login
-      profileCompleted: true, // Assume existing users have completed profile
+      role: 'learner',
+      location: 'Demo Location',
+      bio: 'Demo user profile',
+      skillLevel: 'intermediate'
     };
     setUser(mockUser);
     setCurrentScreen('dashboard');
   };
 
-  const handleSignupSuccess = (firstName: string, lastName: string, email: string) => {
-    // In a real app, you would create the user in your backend
-    // For now, we'll create a mock user with the provided data
+  const handleSignupSuccess = async (firstName: string, lastName: string, email: string) => {
+    // User has been created in Firebase, now create local user object
     const newUser: User = {
       firstName: firstName,
       lastName: lastName,
       email: email,
-      profileCompleted: false,
     };
     setUser(newUser);
+    // New users always need to complete profile setup
     setCurrentScreen('profileSetup');
   };
 

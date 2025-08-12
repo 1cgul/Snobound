@@ -11,6 +11,9 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../config/firebase';
+import FirestoreService from '../services/firestoreService';
 
 interface SignupData {
   firstName: string;
@@ -65,20 +68,40 @@ export default function SignupScreen({ onSwitchToLogin, onSignupSuccess }: Signu
     return true;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    
-    onSignupSuccess(formData.firstName, formData.lastName, formData.email);
+    try {
+      // Create Firebase Auth user
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
 
-    // Reset form
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-    });
+      // Create user document in Firestore
+      await FirestoreService.createUser({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        uid: userCredential.user.uid,
+        createdAt: new Date(),
+      });
+
+      // Reset form
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+      });
+
+      onSignupSuccess(formData.firstName, formData.lastName, formData.email);
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      Alert.alert('Error', error.message || 'Failed to create account');
+    }
   };
 
   return (
@@ -137,6 +160,9 @@ export default function SignupScreen({ onSwitchToLogin, onSignupSuccess }: Signu
                 onChangeText={(value) => handleInputChange('password', value)}
                 placeholder="Enter your password"
                 secureTextEntry
+                passwordRules=""
+                textContentType="none"
+                autoComplete="off"
               />
             </View>
 
@@ -148,6 +174,9 @@ export default function SignupScreen({ onSwitchToLogin, onSignupSuccess }: Signu
                 onChangeText={(value) => handleInputChange('confirmPassword', value)}
                 placeholder="Confirm your password"
                 secureTextEntry
+                passwordRules=""
+                textContentType="none"
+                autoComplete="off"
               />
             </View>
 

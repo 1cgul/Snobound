@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { User, UserRole, SkillLevel, ProfileSetupData } from '../types';
+import { auth } from '../config/firebase';
+import FirestoreService from '../services/firestoreService';
 
 interface ProfileSetupScreenProps {
   user: User;
@@ -34,7 +36,7 @@ export default function ProfileSetupScreen({
   });
 
   const handleInputChange = (field: keyof ProfileSetupData, value: string | UserRole | SkillLevel) => {
-    setProfileData(prev => ({ ...prev, [field]: value }));
+    setProfileData((prev: ProfileSetupData) => ({ ...prev, [field]: value }));
   };
 
   const validateForm = (): boolean => {
@@ -51,21 +53,44 @@ export default function ProfileSetupScreen({
     return true;
   };
 
-  const handleSaveAndContinue = () => {
+  const handleSaveAndContinue = async () => {
     if (!validateForm()) return;
 
-    const updatedUser: User = {
-      ...user,
-      role: profileData.role,
-      profilePhoto: profileData.profilePhoto,
-      location: profileData.location,
-      skillLevel: profileData.skillLevel,
-      bio: profileData.bio,
-      profileCompleted: true,
-    };
+    try {
+      // Get current Firebase user
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        Alert.alert('Error', 'No authenticated user found');
+        return;
+      }
 
+      // Update user document in Firestore
+      const userData = await FirestoreService.getUserByEmail(user.email);
+      if (userData?.id) {
+        await FirestoreService.updateUser(userData.id, {
+          role: profileData.role,
+          profilePhoto: profileData.profilePhoto,
+          location: profileData.location,
+          skillLevel: profileData.skillLevel,
+          bio: profileData.bio,
+          updatedAt: new Date(),
+        });
+      }
 
-    onProfileComplete(updatedUser);
+      const updatedUser: User = {
+        ...user,
+        role: profileData.role,
+        profilePhoto: profileData.profilePhoto,
+        location: profileData.location,
+        skillLevel: profileData.skillLevel,
+        bio: profileData.bio,
+      };
+
+      onProfileComplete(updatedUser);
+    } catch (error: any) {
+      console.error('Profile update error:', error);
+      Alert.alert('Error', 'Failed to update profile');
+    }
   };
 
   const handlePhotoUpload = () => {
