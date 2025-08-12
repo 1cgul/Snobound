@@ -13,9 +13,10 @@ const Tab = createBottomTabNavigator();
 interface MainTabNavigatorProps {
   user: User;
   onLogout: () => void;
+  onEditProfile: () => void;
 }
 
-export default function MainTabNavigator({ user, onLogout }: MainTabNavigatorProps) {
+export default function MainTabNavigator({ user, onLogout, onEditProfile }: MainTabNavigatorProps) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -78,7 +79,7 @@ export default function MainTabNavigator({ user, onLogout }: MainTabNavigatorPro
         name="Profile" 
         options={{ title: 'Profile' }}
       >
-        {() => <ProfileScreen user={user} onLogout={onLogout} />}
+        {() => <ProfileScreen user={user} onLogout={onLogout} onEditProfile={onEditProfile} />}
       </Tab.Screen>
     </Tab.Navigator>
   );

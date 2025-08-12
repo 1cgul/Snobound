@@ -12,7 +12,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { User, UserRole, SkillLevel, ProfileSetupData } from '../types';
+import { User, SkillLevel, ProfileSetupData } from '../types';
 import { auth } from '../config/firebase';
 import FirestoreService from '../services/firestoreService';
 
@@ -28,34 +28,39 @@ export default function ProfileSetupScreen({
   onSkipForNow 
 }: ProfileSetupScreenProps) {
   const [profileData, setProfileData] = useState<ProfileSetupData>({
-    profilePhoto: undefined,
-    location: '',
-    role: 'learner', // Default value
-    skillLevel: 'beginner', // Default value
-    bio: '',
+    profilePhoto: user.profilePhoto || undefined,
+    location: user.location || '',
+    isTeacher: user.isTeacher || false,
+    skillLevel: user.skillLevel || 'beginner',
+    bio: user.bio || '',
   });
 
-  const handleInputChange = (field: keyof ProfileSetupData, value: string | UserRole | SkillLevel) => {
+  const handleInputChange = (field: keyof ProfileSetupData, value: string | boolean | SkillLevel) => {
     setProfileData((prev: ProfileSetupData) => ({ ...prev, [field]: value }));
   };
 
-  const validateForm = (): boolean => {
-    if (!profileData.location.trim()) {
-      Alert.alert('Error', 'Please enter your location');
-      return false;
+  const buildUpdateData = () => {
+    const updateData: Partial<User> = {
+      isTeacher: profileData.isTeacher,
+      skillLevel: profileData.skillLevel,
+      updatedAt: new Date(),
+    };
+
+    // Only include fields that have values
+    if (profileData.location.trim()) {
+      updateData.location = profileData.location.trim();
+    }
+    if (profileData.bio.trim()) {
+      updateData.bio = profileData.bio.trim();
+    }
+    if (profileData.profilePhoto) {
+      updateData.profilePhoto = profileData.profilePhoto;
     }
 
-    if (!profileData.bio.trim()) {
-      Alert.alert('Error', 'Please enter a short bio');
-      return false;
-    }
-
-    return true;
+    return updateData;
   };
 
   const handleSaveAndContinue = async () => {
-    if (!validateForm()) return;
-
     try {
       // Get current Firebase user
       const currentUser = auth.currentUser;
@@ -64,26 +69,17 @@ export default function ProfileSetupScreen({
         return;
       }
 
+      const updateData = buildUpdateData();
+
       // Update user document in Firestore
       const userData = await FirestoreService.getUserByEmail(user.email);
       if (userData?.id) {
-        await FirestoreService.updateUser(userData.id, {
-          role: profileData.role,
-          profilePhoto: profileData.profilePhoto,
-          location: profileData.location,
-          skillLevel: profileData.skillLevel,
-          bio: profileData.bio,
-          updatedAt: new Date(),
-        });
+        await FirestoreService.updateUser(userData.id, updateData);
       }
 
       const updatedUser: User = {
         ...user,
-        role: profileData.role,
-        profilePhoto: profileData.profilePhoto,
-        location: profileData.location,
-        skillLevel: profileData.skillLevel,
-        bio: profileData.bio,
+        ...updateData,
       };
 
       onProfileComplete(updatedUser);
@@ -146,13 +142,13 @@ export default function ProfileSetupScreen({
                 <TouchableOpacity
                   style={[
                     styles.roleButton,
-                    profileData.role === 'learner' && styles.roleButtonSelected
+                    !profileData.isTeacher && styles.roleButtonSelected
                   ]}
-                  onPress={() => handleInputChange('role', 'learner')}
+                  onPress={() => handleInputChange('isTeacher', false)}
                 >
                   <Text style={[
                     styles.roleButtonText,
-                    profileData.role === 'learner' && styles.roleButtonTextSelected
+                    !profileData.isTeacher && styles.roleButtonTextSelected
                   ]}>
                     🏂 Learn
                   </Text>
@@ -161,13 +157,13 @@ export default function ProfileSetupScreen({
                 <TouchableOpacity
                   style={[
                     styles.roleButton,
-                    profileData.role === 'teacher' && styles.roleButtonSelected
+                    profileData.isTeacher && styles.roleButtonSelected
                   ]}
-                  onPress={() => handleInputChange('role', 'teacher')}
+                  onPress={() => handleInputChange('isTeacher', true)}
                 >
                   <Text style={[
                     styles.roleButtonText,
-                    profileData.role === 'teacher' && styles.roleButtonTextSelected
+                    profileData.isTeacher && styles.roleButtonTextSelected
                   ]}>
                     🎿 Teach
                   </Text>

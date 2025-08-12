@@ -22,7 +22,7 @@ export default function BookingsScreen({ user }: BookingsScreenProps) {
           <Text style={styles.emoji}>📅</Text>
           <Text style={styles.cardTitle}>Your Lessons & Sessions</Text>
           <Text style={styles.cardDescription}>
-            {user.role === 'teacher' 
+            {user.isTeacher 
               ? 'Manage your teaching schedule and upcoming lessons with students.'
               : 'View your booked lessons and upcoming sessions with instructors.'
             }

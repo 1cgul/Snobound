@@ -13,12 +13,12 @@ interface HomeScreenProps {
 }
 
 export default function HomeScreen({ user }: HomeScreenProps) {
-  const getRoleEmoji = (role?: string) => {
-    return role === 'teacher' ? '🎿' : '🏂';
+  const getRoleEmoji = (isTeacher?: boolean) => {
+    return isTeacher ? '🎿' : '🏂';
   };
 
-  const getRoleDescription = (role?: string) => {
-    return role === 'teacher' 
+  const getRoleDescription = (isTeacher?: boolean) => {
+    return isTeacher 
       ? 'Ready to share your snow sports expertise!' 
       : 'Ready to learn from experienced riders!';
   };
@@ -29,16 +29,16 @@ export default function HomeScreen({ user }: HomeScreenProps) {
         <Text style={styles.title}>Welcome to Snobound!</Text>
         
         <View style={styles.userCard}>
-          <Text style={styles.emoji}>{getRoleEmoji(user.role)}</Text>
+          <Text style={styles.emoji}>{getRoleEmoji(user.isTeacher)}</Text>
           <Text style={styles.userName}>
             {user.firstName} {user.lastName}
           </Text>
           <Text style={styles.userEmail}>{user.email}</Text>
           <Text style={styles.roleText}>
-            {user.role === 'teacher' ? 'Teacher' : 'Learner'}
+            {user.isTeacher ? 'Teacher' : 'Learner'}
           </Text>
           <Text style={styles.description}>
-            {getRoleDescription(user.role)}
+            {getRoleDescription(user.isTeacher)}
           </Text>
         </View>
 

@@ -22,7 +22,7 @@ export default function App() {
 
   // Helper function to check if profile is complete
   const isProfileComplete = (user: User): boolean => {
-    return !!(user.role || user.location || user.bio);
+    return !!(user.isTeacher !== undefined || user.location || user.bio);
   };
 
   const handleSwitchToSignup = () => {
@@ -67,6 +67,10 @@ export default function App() {
     setCurrentScreen('dashboard');
   };
 
+  const handleEditProfile = () => {
+    setCurrentScreen('profileSetup');
+  };
+
   const handleLogout = () => {
     signOut(auth)
       .then(() => {
@@ -102,6 +106,7 @@ export default function App() {
             <MainTabNavigator
               user={user}
               onLogout={handleLogout}
+              onEditProfile={handleEditProfile}
             />
           </NavigationContainer>
         ) : null;

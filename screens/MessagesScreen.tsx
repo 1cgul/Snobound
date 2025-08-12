@@ -22,7 +22,7 @@ export default function MessagesScreen({ user }: MessagesScreenProps) {
           <Text style={styles.emoji}>💬</Text>
           <Text style={styles.cardTitle}>Chat & Communication</Text>
           <Text style={styles.cardDescription}>
-            {user.role === 'teacher' 
+            {user.isTeacher 
               ? 'Connect with your students, answer questions, and provide guidance.'
               : 'Chat with your instructors, ask questions, and get personalized advice.'
             }

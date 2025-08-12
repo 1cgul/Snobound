@@ -2,7 +2,6 @@ export type ScreenType = 'login' | 'signup' | 'dashboard' | 'forgotPassword' | '
 
 export type TabScreenType = 'Home' | 'Bookings' | 'Messages' | 'Profile';
 
-export type UserRole = 'learner' | 'teacher' | 'instructor' | 'admin';
 export type SkillLevel = 'beginner' | 'intermediate' | 'advanced';
 
 export interface User {
@@ -10,7 +9,7 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  role?: UserRole;
+  isTeacher?: boolean;
   // Profile fields
   profilePhoto?: string;
   location?: string;
@@ -25,7 +24,7 @@ export interface User {
 export interface ProfileSetupData {
   profilePhoto?: string;
   location: string;
-  role: UserRole;
+  isTeacher: boolean;
   skillLevel: SkillLevel;
   bio: string;
 }

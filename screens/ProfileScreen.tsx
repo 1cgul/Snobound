@@ -12,11 +12,12 @@ import { User } from '../types';
 interface ProfileScreenProps {
   user: User;
   onLogout: () => void;
+  onEditProfile: () => void;
 }
 
-export default function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
-  const getRoleEmoji = (role?: string) => {
-    return role === 'teacher' ? '🎿' : '🏂';
+export default function ProfileScreen({ user, onLogout, onEditProfile }: ProfileScreenProps) {
+  const getRoleEmoji = (isTeacher?: boolean) => {
+    return isTeacher ? '🎿' : '🏂';
   };
 
   return (
@@ -25,13 +26,13 @@ export default function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
         <Text style={styles.title}>Profile</Text>
         
         <View style={styles.userCard}>
-          <Text style={styles.emoji}>{getRoleEmoji(user.role)}</Text>
+          <Text style={styles.emoji}>{getRoleEmoji(user.isTeacher)}</Text>
           <Text style={styles.userName}>
             {user.firstName} {user.lastName}
           </Text>
           <Text style={styles.userEmail}>{user.email}</Text>
           <Text style={styles.roleText}>
-            {user.role === 'teacher' ? 'Teacher' : 'Learner'}
+            {user.isTeacher ? 'Teacher' : 'Learner'}
           </Text>
           {user.location && (
             <Text style={styles.locationText}>📍 {user.location}</Text>
@@ -44,7 +45,7 @@ export default function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
         <View style={styles.settingsSection}>
           <Text style={styles.sectionTitle}>Settings</Text>
           
-          <TouchableOpacity style={styles.settingItem}>
+          <TouchableOpacity style={styles.settingItem} onPress={onEditProfile}>
             <Text style={styles.settingText}>Edit Profile</Text>
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
