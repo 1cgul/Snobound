@@ -89,7 +89,8 @@ export default function CreateListingScreen({ user, onBack, onSuccess }: CreateL
       ]);
     } catch (error) {
       console.error('Error creating listing:', error);
-      Alert.alert('Error', 'Failed to create listing');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create listing';
+      Alert.alert('Error', errorMessage);
     }
   };
 
