@@ -19,7 +19,7 @@ export default function App() {
 
   // Helper function to check if profile is complete
   const isProfileComplete = (user: User): boolean => {
-    return !!(user.role && user.location && user.bio);
+    return !!(user.role || user.location || user.bio);
   };
 
   const handleSwitchToSignup = () => {
@@ -37,12 +37,7 @@ export default function App() {
   const handleLoginSuccess = (userData: User | null) => {
     if (userData) {
       setUser(userData);
-      // Check if profile is complete, redirect accordingly
-      if (isProfileComplete(userData)) {
-        setCurrentScreen('dashboard');
-      } else {
-        setCurrentScreen('profileSetup');
-      }
+      setCurrentScreen('dashboard');
     } else {
       Alert.alert('Error', 'User data not found');
     }
@@ -56,7 +51,7 @@ export default function App() {
       email: email,
     };
     setUser(newUser);
-    // New users always need to complete profile setup
+    // Take new users directly to signup
     setCurrentScreen('profileSetup');
   };
 
