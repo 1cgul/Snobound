@@ -1,4 +1,4 @@
-import { User, UserRole } from '../types';
+import { User } from '../types';
 
 // Mock API responses for development
 // Replace these with actual API calls when you implement the backend
@@ -20,7 +20,7 @@ export interface SignupRequest {
   lastName: string;
   email: string;
   password: string;
-  role: UserRole;
+  isTeacher?: boolean;
 }
 
 export interface SignupResponse {
@@ -43,7 +43,7 @@ export const authService = {
         firstName: 'Demo',
         lastName: 'User',
         email: request.email,
-        role: 'learner', // Default role for existing users
+        isTeacher: false, // Default role for existing users
       },
       token: 'mock-jwt-token',
     };
@@ -60,7 +60,7 @@ export const authService = {
         firstName: request.firstName,
         lastName: request.lastName,
         email: request.email,
-        role: request.role,
+        isTeacher: request.isTeacher || false,
       },
       token: 'mock-jwt-token',
     };

@@ -2,18 +2,17 @@ import React from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { User } from '../types';
 
-interface DashboardScreenProps {
+interface HomeScreenProps {
   user: User;
-  onLogout: () => void;
 }
 
-export default function DashboardScreen({ user, onLogout }: DashboardScreenProps) {
+export default function HomeScreen({ user }: HomeScreenProps) {
   const getRoleEmoji = (isTeacher?: boolean) => {
     return isTeacher ? '🎿' : '🏂';
   };
@@ -26,7 +25,7 @@ export default function DashboardScreen({ user, onLogout }: DashboardScreenProps
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView style={styles.content}>
         <Text style={styles.title}>Welcome to Snobound!</Text>
         
         <View style={styles.userCard}>
@@ -52,11 +51,7 @@ export default function DashboardScreen({ user, onLogout }: DashboardScreenProps
             • Share tips and experiences
           </Text>
         </View>
-
-        <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -69,7 +64,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
-    justifyContent: 'center',
   },
   title: {
     fontSize: 32,
@@ -144,16 +138,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     lineHeight: 24,
-  },
-  logoutButton: {
-    backgroundColor: '#FF3B30',
-    borderRadius: 8,
-    padding: 15,
-    alignItems: 'center',
-  },
-  logoutButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

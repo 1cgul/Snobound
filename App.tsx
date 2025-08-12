@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Alert } from 'react-native';
+import { signOut } from 'firebase/auth';
+import { auth } from './config/firebase';
+import { NavigationContainer } from '@react-navigation/native';
 
 // Initialize Firebase
 import './config/firebase';
 
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
-import DashboardScreen from './screens/DashboardScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
+import MainTabNavigator from './components/MainTabNavigator';
 import { ScreenType, User } from './types';
 
 export default function App() {
@@ -19,7 +22,7 @@ export default function App() {
 
   // Helper function to check if profile is complete
   const isProfileComplete = (user: User): boolean => {
-    return !!(user.role || user.location || user.bio);
+    return !!(user.isTeacher !== undefined || user.location || user.bio);
   };
 
   const handleSwitchToSignup = () => {
@@ -64,9 +67,20 @@ export default function App() {
     setCurrentScreen('dashboard');
   };
 
+  const handleEditProfile = () => {
+    setCurrentScreen('profileSetup');
+  };
+
   const handleLogout = () => {
-    setUser(null);
-    setCurrentScreen('login');
+    signOut(auth)
+      .then(() => {
+        setUser(null);
+        setCurrentScreen('login');
+      })
+      .catch((error) => {
+        console.error('Sign out error:', error);
+        Alert.alert('Error', 'Failed to sign out. Please try again.');
+      });
   };
 
   const renderCurrentScreen = () => {
@@ -88,10 +102,13 @@ export default function App() {
         );
       case 'dashboard':
         return user ? (
-          <DashboardScreen
-            user={user}
-            onLogout={handleLogout}
-          />
+          <NavigationContainer>
+            <MainTabNavigator
+              user={user}
+              onLogout={handleLogout}
+              onEditProfile={handleEditProfile}
+            />
+          </NavigationContainer>
         ) : null;
       case 'forgotPassword':
         return (
