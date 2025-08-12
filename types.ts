@@ -1,5 +1,7 @@
 export type ScreenType = 'login' | 'signup' | 'dashboard' | 'forgotPassword' | 'profileSetup';
 
+export type TabScreenType = 'Home' | 'Bookings' | 'Messages' | 'Profile';
+
 export type UserRole = 'learner' | 'teacher' | 'instructor' | 'admin';
 export type SkillLevel = 'beginner' | 'intermediate' | 'advanced';
 

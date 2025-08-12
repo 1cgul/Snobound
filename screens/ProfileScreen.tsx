@@ -4,30 +4,25 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { User } from '../types';
 
-interface DashboardScreenProps {
+interface ProfileScreenProps {
   user: User;
   onLogout: () => void;
 }
 
-export default function DashboardScreen({ user, onLogout }: DashboardScreenProps) {
+export default function ProfileScreen({ user, onLogout }: ProfileScreenProps) {
   const getRoleEmoji = (role?: string) => {
     return role === 'teacher' ? '🎿' : '🏂';
   };
 
-  const getRoleDescription = (role?: string) => {
-    return role === 'teacher' 
-      ? 'Ready to share your snow sports expertise!' 
-      : 'Ready to learn from experienced riders!';
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome to Snobound!</Text>
+      <ScrollView style={styles.content}>
+        <Text style={styles.title}>Profile</Text>
         
         <View style={styles.userCard}>
           <Text style={styles.emoji}>{getRoleEmoji(user.role)}</Text>
@@ -38,25 +33,42 @@ export default function DashboardScreen({ user, onLogout }: DashboardScreenProps
           <Text style={styles.roleText}>
             {user.role === 'teacher' ? 'Teacher' : 'Learner'}
           </Text>
-          <Text style={styles.description}>
-            {getRoleDescription(user.role)}
-          </Text>
+          {user.location && (
+            <Text style={styles.locationText}>📍 {user.location}</Text>
+          )}
+          {user.bio && (
+            <Text style={styles.bioText}>{user.bio}</Text>
+          )}
         </View>
 
-        <View style={styles.comingSoon}>
-          <Text style={styles.comingSoonTitle}>Coming Soon:</Text>
-          <Text style={styles.comingSoonText}>
-            • Connect with other riders{'\n'}
-            • Schedule lessons{'\n'}
-            • Find local ski areas{'\n'}
-            • Share tips and experiences
-          </Text>
+        <View style={styles.settingsSection}>
+          <Text style={styles.sectionTitle}>Settings</Text>
+          
+          <TouchableOpacity style={styles.settingItem}>
+            <Text style={styles.settingText}>Edit Profile</Text>
+            <Text style={styles.arrow}>›</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.settingItem}>
+            <Text style={styles.settingText}>Notifications</Text>
+            <Text style={styles.arrow}>›</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.settingItem}>
+            <Text style={styles.settingText}>Privacy</Text>
+            <Text style={styles.arrow}>›</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.settingItem}>
+            <Text style={styles.settingText}>Help & Support</Text>
+            <Text style={styles.arrow}>›</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
           <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -69,7 +81,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
-    justifyContent: 'center',
   },
   title: {
     fontSize: 32,
@@ -114,16 +125,20 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     marginBottom: 10,
   },
-  description: {
+  locationText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 10,
+  },
+  bioText: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
     lineHeight: 22,
   },
-  comingSoon: {
+  settingsSection: {
     backgroundColor: 'white',
     borderRadius: 10,
-    padding: 20,
     marginBottom: 30,
     shadowColor: '#000',
     shadowOffset: {
@@ -134,22 +149,36 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  comingSoonTitle: {
+  sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 10,
+    padding: 20,
+    paddingBottom: 10,
   },
-  comingSoonText: {
+  settingItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  settingText: {
     fontSize: 16,
-    color: '#666',
-    lineHeight: 24,
+    color: '#333',
+  },
+  arrow: {
+    fontSize: 18,
+    color: '#999',
   },
   logoutButton: {
     backgroundColor: '#FF3B30',
     borderRadius: 8,
     padding: 15,
     alignItems: 'center',
+    marginBottom: 20,
   },
   logoutButtonText: {
     color: 'white',

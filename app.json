@@ -4,7 +4,6 @@
     "slug": "snobound",
     "version": "1.0.0",
     "orientation": "portrait",
-
     "userInterfaceStyle": "light",
     "splash": {
       "resizeMode": "contain",
@@ -21,6 +20,8 @@
       "googleServicesFile": "./google-services.json"
     },
     "web": {},
-    "plugins": []
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
