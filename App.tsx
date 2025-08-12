@@ -13,6 +13,8 @@ import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import ProfileSetupScreen from './screens/ProfileSetupScreen';
+import CreateListingScreen from './screens/CreateListingScreen';
+import SelectListingTypeScreen from './screens/SelectListingTypeScreen';
 import MainTabNavigator from './components/MainTabNavigator';
 import { ScreenType, User } from './types';
 
@@ -71,6 +73,27 @@ export default function App() {
     setCurrentScreen('profileSetup');
   };
 
+  const handleCreateListing = () => {
+    setCurrentScreen('selectListingType');
+  };
+
+  const handleSelectSingleListing = () => {
+    setCurrentScreen('createListing');
+  };
+
+  const handleSelectRecurringListing = () => {
+    // TODO: Create recurring listing screen
+    setCurrentScreen('createListing'); // For now, use same screen
+  };
+
+  const handleBackToDashboard = () => {
+    setCurrentScreen('dashboard');
+  };
+
+  const handleBackToSelectType = () => {
+    setCurrentScreen('selectListingType');
+  };
+
   const handleLogout = () => {
     signOut(auth)
       .then(() => {
@@ -124,6 +147,8 @@ export default function App() {
             onSkipForNow={handleSkipProfileSetup}
           />
         ) : null;
+
+
       default:
         return (
           <LoginScreen
