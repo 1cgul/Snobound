@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { User } from '../types';
@@ -7,6 +7,8 @@ import HomeScreen from '../screens/HomeScreen';
 import BookingsScreen from '../screens/BookingsScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import SelectListingTypeScreen from '../screens/SelectListingTypeScreen';
+import CreateListingScreen from '../screens/CreateListingScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -17,8 +19,44 @@ interface MainTabNavigatorProps {
 }
 
 export default function MainTabNavigator({ user, onLogout, onEditProfile }: MainTabNavigatorProps) {
+  const [currentView, setCurrentView] = useState<'tabs' | 'selectType' | 'createListing'>('tabs');
+  const [initialTab, setInitialTab] = useState<string>('Bookings');
+
+  const handleCreateListing = () => setCurrentView('selectType');
+  const handleSelectSingle = () => setCurrentView('createListing');
+  const handleSelectRecurring = () => setCurrentView('createListing'); // TODO: different screen later
+  const handleBackToBookings = () => {
+    setInitialTab('Bookings');
+    setCurrentView('tabs');
+  };
+  const handleBackToSelectType = () => setCurrentView('selectType');
+  const handleListingSuccess = () => {
+    setInitialTab('Bookings');
+    setCurrentView('tabs');
+  };
+
+  if (currentView === 'selectType') {
+    return (
+      <SelectListingTypeScreen
+        onBack={handleBackToBookings}
+        onSelectSingle={handleSelectSingle}
+        onSelectRecurring={handleSelectRecurring}
+      />
+    );
+  }
+
+  if (currentView === 'createListing') {
+    return (
+      <CreateListingScreen
+        user={user}
+        onBack={handleBackToSelectType}
+        onSuccess={handleListingSuccess}
+      />
+    );
+  }
   return (
     <Tab.Navigator
+      initialRouteName={initialTab}
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap;
@@ -65,7 +103,7 @@ export default function MainTabNavigator({ user, onLogout, onEditProfile }: Main
         name="Bookings" 
         options={{ title: 'Bookings' }}
       >
-        {() => <BookingsScreen user={user} />}
+        {() => <BookingsScreen user={user} onCreateListing={handleCreateListing} />}
       </Tab.Screen>
       
       <Tab.Screen 

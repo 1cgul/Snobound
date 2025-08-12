@@ -1,4 +1,4 @@
-export type ScreenType = 'login' | 'signup' | 'dashboard' | 'forgotPassword' | 'profileSetup';
+export type ScreenType = 'login' | 'signup' | 'dashboard' | 'forgotPassword' | 'profileSetup' | 'createListing' | 'selectListingType';
 
 export type TabScreenType = 'Home' | 'Bookings' | 'Messages' | 'Profile';
 
@@ -27,4 +27,18 @@ export interface ProfileSetupData {
   isTeacher: boolean;
   skillLevel: SkillLevel;
   bio: string;
+}
+
+export type SportSkill = 'snowboarding' | 'skiing';
+
+export interface Listing {
+  id?: string;
+  teacherId: string;
+  date: string; // YYYY-MM-DD format
+  startTime: string; // HH:MM format
+  endTime: string; // HH:MM format
+  location: string;
+  price: number;
+  skill: SportSkill;
+  createdAt: Date;
 }
