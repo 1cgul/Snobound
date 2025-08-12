@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
-import { User, Listing } from '../types';
+import { User, Listing, RecurringListing } from '../types';
 import ListingService from '../services/listingService';
 
 interface BookingsScreenProps {
@@ -21,6 +21,7 @@ interface BookingsScreenProps {
 
 export default function BookingsScreen({ user, onCreateListing }: BookingsScreenProps) {
   const [listings, setListings] = useState<Listing[]>([]);
+  const [recurringListings, setRecurringListings] = useState<RecurringListing[]>([]);
   const [markedDates, setMarkedDates] = useState<any>({});
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [dayListings, setDayListings] = useState<Listing[]>([]);
@@ -32,27 +33,59 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
     }
   }, [user]);
 
+  const generateRecurringDates = (recurring: RecurringListing[]): Listing[] => {
+    const generated: Listing[] = [];
+    const today = new Date();
+    
+    recurring.forEach(recur => {
+      let current = new Date(Math.max(recur.startDate.getTime(), today.getTime()));
+      const end = recur.endDate;
+      
+      while (current <= end) {
+        if (current.getDay() === recur.dayOfWeek) {
+          generated.push({
+            id: `${recur.id}-${current.toISOString().split('T')[0]}`,
+            teacherId: recur.teacherId,
+            date: current.toISOString().split('T')[0],
+            startTime: recur.startTime,
+            endTime: recur.endTime,
+            location: recur.location,
+            price: recur.price,
+            skill: recur.skill,
+            createdAt: recur.createdAt,
+          });
+        }
+        current.setDate(current.getDate() + 1);
+      }
+    });
+    
+    return generated;
+  };
+
   const loadListings = async () => {
     try {
       const teacherId = user.uid || user.id || user.email;
-      console.log('Loading listings for user:', { uid: user.uid, id: user.id, email: user.email });
-      console.log('Using teacherId:', teacherId);
       
-      const teacherListings = await ListingService.getTeacherListings(teacherId);
-      console.log('Received listings:', teacherListings);
-      setListings(teacherListings);
+      const [singleListings, recurringListings] = await Promise.all([
+        ListingService.getTeacherListings(teacherId),
+        ListingService.getTeacherRecurringListings(teacherId)
+      ]);
       
-      // Create marked dates object for calendar
+      setListings(singleListings);
+      setRecurringListings(recurringListings);
+      
+      const generatedFromRecurring = generateRecurringDates(recurringListings);
+      const allListings = [...singleListings, ...generatedFromRecurring];
+      
       const marked: any = {};
-      teacherListings.forEach(listing => {
-        console.log('Marking date:', listing.date);
+      allListings.forEach(listing => {
         marked[listing.date] = {
           marked: true,
           dotColor: '#007AFF',
           selectedColor: '#007AFF'
         };
       });
-      console.log('Marked dates:', marked);
+      
       setMarkedDates(marked);
     } catch (error) {
       console.error('Error loading listings:', error);
@@ -69,11 +102,13 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
 
   const handleDayPress = (day: any) => {
     const dateString = day.dateString;
-    const dayAvailability = listings.filter(listing => listing.date === dateString);
+    const singleDayListings = listings.filter(listing => listing.date === dateString);
+    const recurringDayListings = generateRecurringDates(recurringListings).filter(listing => listing.date === dateString);
+    const allDayListings = [...singleDayListings, ...recurringDayListings];
     
-    if (dayAvailability.length > 0) {
+    if (allDayListings.length > 0) {
       setSelectedDate(dateString);
-      setDayListings(dayAvailability);
+      setDayListings(allDayListings);
       setShowDayModal(true);
     }
   };

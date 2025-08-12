@@ -9,6 +9,7 @@ import MessagesScreen from '../screens/MessagesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SelectListingTypeScreen from '../screens/SelectListingTypeScreen';
 import CreateListingScreen from '../screens/CreateListingScreen';
+import RecurringListingScreen from '../screens/RecurringListingScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -19,12 +20,12 @@ interface MainTabNavigatorProps {
 }
 
 export default function MainTabNavigator({ user, onLogout, onEditProfile }: MainTabNavigatorProps) {
-  const [currentView, setCurrentView] = useState<'tabs' | 'selectType' | 'createListing'>('tabs');
+  const [currentView, setCurrentView] = useState<'tabs' | 'selectType' | 'createListing' | 'recurringListing'>('tabs');
   const [initialTab, setInitialTab] = useState<string>('Bookings');
 
   const handleCreateListing = () => setCurrentView('selectType');
   const handleSelectSingle = () => setCurrentView('createListing');
-  const handleSelectRecurring = () => setCurrentView('createListing'); // TODO: different screen later
+  const handleSelectRecurring = () => setCurrentView('recurringListing');
   const handleBackToBookings = () => {
     setInitialTab('Bookings');
     setCurrentView('tabs');
@@ -48,6 +49,16 @@ export default function MainTabNavigator({ user, onLogout, onEditProfile }: Main
   if (currentView === 'createListing') {
     return (
       <CreateListingScreen
+        user={user}
+        onBack={handleBackToSelectType}
+        onSuccess={handleListingSuccess}
+      />
+    );
+  }
+
+  if (currentView === 'recurringListing') {
+    return (
+      <RecurringListingScreen
         user={user}
         onBack={handleBackToSelectType}
         onSuccess={handleListingSuccess}
