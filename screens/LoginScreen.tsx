@@ -11,6 +11,9 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../config/firebase';
+import FirestoreService from '../services/firestoreService';
 
 interface LoginData {
   email: string;
@@ -20,7 +23,7 @@ interface LoginData {
 interface LoginScreenProps {
   onSwitchToSignup: () => void;
   onSwitchToForgotPassword: () => void;
-  onLoginSuccess: (email: string) => void;
+  onLoginSuccess: (user: any) => void;
 }
 
 export default function LoginScreen({ onSwitchToSignup, onSwitchToForgotPassword, onLoginSuccess }: LoginScreenProps) {
@@ -53,17 +56,31 @@ export default function LoginScreen({ onSwitchToSignup, onSwitchToForgotPassword
     return true;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    Alert.alert('Success', `Welcome back to Snobound! Logged in as ${formData.email}`);
-    onLoginSuccess(formData.email);
+    try {
+      // Sign in with Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
 
-    // Reset form
-    setFormData({
-      email: '',
-      password: '',
-    });
+      // Get user data from Firestore
+      const userData = await FirestoreService.getUserByEmail(formData.email);
+      
+      // Reset form
+      setFormData({
+        email: '',
+        password: '',
+      });
+
+      onLoginSuccess(userData);
+    } catch (error: any) {
+      console.error('Login error:', error);
+      Alert.alert('Error', error.message || 'Failed to login');
+    }
   };
 
   return (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Alert } from 'react-native';
 
 // Initialize Firebase
 import './config/firebase';
@@ -33,20 +34,18 @@ export default function App() {
     setCurrentScreen('forgotPassword');
   };
 
-  const handleLoginSuccess = (email: string) => {
-    // In a real app, you would get user data from your backend
-    // For now, we'll create a mock user with complete profile
-    const mockUser: User = {
-      firstName: 'Demo',
-      lastName: 'User',
-      email: email,
-      role: 'learner',
-      location: 'Demo Location',
-      bio: 'Demo user profile',
-      skillLevel: 'intermediate'
-    };
-    setUser(mockUser);
-    setCurrentScreen('dashboard');
+  const handleLoginSuccess = (userData: User | null) => {
+    if (userData) {
+      setUser(userData);
+      // Check if profile is complete, redirect accordingly
+      if (isProfileComplete(userData)) {
+        setCurrentScreen('dashboard');
+      } else {
+        setCurrentScreen('profileSetup');
+      }
+    } else {
+      Alert.alert('Error', 'User data not found');
+    }
   };
 
   const handleSignupSuccess = async (firstName: string, lastName: string, email: string) => {
