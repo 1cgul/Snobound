@@ -270,6 +270,40 @@ class ListingService {
       return [];
     }
   }
+
+  async getAllTeacherExclusions(teacherId: string): Promise<{date: string, recurringListingId: string}[]> {
+    try {
+      const recurringListings = await this.getTeacherRecurringListings(teacherId);
+      const allExclusions: {date: string, recurringListingId: string}[] = [];
+      
+      for (const recur of recurringListings) {
+        const exclusions = await this.getExclusions(recur.id!);
+        exclusions.forEach(date => {
+          allExclusions.push({ date, recurringListingId: recur.id! });
+        });
+      }
+      
+      return allExclusions;
+    } catch (error) {
+      console.error('Error getting all teacher exclusions:', error);
+      return [];
+    }
+  }
+
+  async removeExclusion(recurringListingId: string, date: string): Promise<void> {
+    try {
+      const q = query(
+        collection(db, this.exclusionCollectionName),
+        where('recurringListingId', '==', recurringListingId),
+        where('date', '==', date)
+      );
+      const querySnapshot = await getDocs(q);
+      querySnapshot.forEach(doc => deleteDoc(doc.ref));
+    } catch (error) {
+      console.error('Error removing exclusion:', error);
+      throw error;
+    }
+  }
 }
 
 export default new ListingService();

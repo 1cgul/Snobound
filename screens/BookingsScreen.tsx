@@ -26,6 +26,7 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
   const [markedDates, setMarkedDates] = useState<any>({});
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [dayListings, setDayListings] = useState<Listing[]>([]);
+  const [dayExclusions, setDayExclusions] = useState<{date: string, recurringListingId: string}[]>([]);
   const [showDayModal, setShowDayModal] = useState(false);
 
   useEffect(() => {
@@ -69,9 +70,10 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
     try {
       const teacherId = user.uid || user.id || user.email;
       
-      const [singleListings, recurringListings] = await Promise.all([
+      const [singleListings, recurringListings, allExclusions] = await Promise.all([
         ListingService.getTeacherListings(teacherId),
-        ListingService.getTeacherRecurringListings(teacherId)
+        ListingService.getTeacherRecurringListings(teacherId),
+        ListingService.getAllTeacherExclusions(teacherId)
       ]);
       
       setListings(singleListings);
@@ -86,6 +88,15 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
           marked: true,
           dotColor: '#007AFF',
           selectedColor: '#007AFF'
+        };
+      });
+      
+      // Mark exclusions with red dots
+      allExclusions.forEach(exclusion => {
+        marked[exclusion.date] = {
+          ...marked[exclusion.date],
+          marked: true,
+          dotColor: '#ff4444'
         };
       });
       
@@ -108,10 +119,12 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
     const singleDayListings = listings.filter(listing => listing.date === dateString);
     const recurringDayListings = (await generateRecurringDates(recurringListings)).filter(listing => listing.date === dateString);
     const allDayListings = [...singleDayListings, ...recurringDayListings];
+    const exclusions = (await ListingService.getAllTeacherExclusions(user.uid || user.id || user.email)).filter(ex => ex.date === dateString);
     
-    if (allDayListings.length > 0) {
+    if (allDayListings.length > 0 || exclusions.length > 0) {
       setSelectedDate(dateString);
       setDayListings(allDayListings);
+      setDayExclusions(exclusions);
       setShowDayModal(true);
     }
   };
@@ -283,6 +296,42 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
               style={styles.timeSlotsList}
               showsVerticalScrollIndicator={false}
             />
+            
+            {dayExclusions.length > 0 && (
+              <View style={styles.exclusionsSection}>
+                <Text style={styles.exclusionsTitle}>Excluded Times</Text>
+                {dayExclusions.map((exclusion, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.exclusionItem}
+                    onLongPress={() => {
+                      Alert.alert(
+                        'Remove Exclusion',
+                        'Restore availability for this date?',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Restore',
+                            onPress: async () => {
+                              try {
+                                await ListingService.removeExclusion(exclusion.recurringListingId, exclusion.date);
+                                loadListings();
+                                setShowDayModal(false);
+                              } catch (error) {
+                                Alert.alert('Error', 'Failed to restore availability');
+                              }
+                            }
+                          }
+                        ]
+                      );
+                    }}
+                  >
+                    <Text style={styles.exclusionText}>🚫 Availability excluded</Text>
+                    <Text style={styles.exclusionHint}>Hold to restore</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -422,6 +471,34 @@ const styles = StyleSheet.create({
     color: '#ccc',
     textAlign: 'right',
     fontStyle: 'italic',
+  },
+  exclusionsSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  exclusionsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ff4444',
+    marginBottom: 10,
+  },
+  exclusionItem: {
+    backgroundColor: '#ffe6e6',
+    borderRadius: 8,
+    padding: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ff4444',
+  },
+  exclusionText: {
+    fontSize: 14,
+    color: '#cc0000',
+    fontWeight: '500',
+  },
+  exclusionHint: {
+    fontSize: 10,
+    color: '#999',
+    fontStyle: 'italic',
+    marginTop: 2,
   },
   card: {
     backgroundColor: 'white',
