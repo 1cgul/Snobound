@@ -102,10 +102,10 @@ export default function CreateListingScreen({ user, onBack, onSuccess }: CreateL
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={onBack}>
-            <Text style={styles.backButton}>← Back</Text>
+            <Text style={styles.backButton}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Create Listing</Text>
-          <View style={styles.placeholder} />
+          <View style={{ width: 28 }} />
         </View>
 
         <ScrollView style={styles.content}>
@@ -278,12 +278,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 25,
+    paddingTop: 10,
+    paddingBottom: 15,
     backgroundColor: '#f5f5f5',
   },
   backButton: {
-    fontSize: 16,
+    fontSize: 28,
     color: '#007AFF',
   },
   title: {
