@@ -325,38 +325,42 @@ export default function RecurringListingScreen({ user, onBack, onSuccess }: Recu
           </TouchableOpacity>
 
           {/* Current Availabilities List */}
-          {availabilities.length > 0 && (
-            <View style={styles.listContainer}>
-              <Text style={styles.listTitle}>Added Availabilities</Text>
-              {availabilities
+          <View style={styles.listContainer}>
+            <Text style={styles.listTitle}>Added Availabilities</Text>
+            {availabilities.length > 0 ? (
+              availabilities
                 .sort((a, b) => a.dayOfWeek - b.dayOfWeek || timeToMinutes(a.startTime) - timeToMinutes(b.startTime))
                 .map((availability, index) => {
-                const dayName = DAYS_OF_WEEK.find(d => d.value === availability.dayOfWeek)?.label;
-                return (
-                  <View key={index} style={styles.availabilityItem}>
-                    <View style={styles.availabilityInfo}>
-                      <Text style={styles.availabilityDay}>{dayName}</Text>
-                      <Text style={styles.availabilityTime}>
-                        {formatTimeDisplay(availability.startTime)} - {formatTimeDisplay(availability.endTime)}
-                      </Text>
-                      <Text style={styles.availabilityDetails}>
-                        {availability.skill === 'snowboarding' ? '🏂' : '🎿'} {availability.skill}
-                      </Text>
+                  const dayName = DAYS_OF_WEEK.find(d => d.value === availability.dayOfWeek)?.label;
+                  return (
+                    <View key={index} style={styles.availabilityItem}>
+                      <View style={styles.availabilityInfo}>
+                        <Text style={styles.availabilityDay}>{dayName}</Text>
+                        <Text style={styles.availabilityTime}>
+                          {formatTimeDisplay(availability.startTime)} - {formatTimeDisplay(availability.endTime)}
+                        </Text>
+                        <Text style={styles.availabilityDetails}>
+                          {availability.skill === 'snowboarding' ? '🏂' : '🎿'} {availability.skill}
+                        </Text>
+                      </View>
+                      <TouchableOpacity onPress={() => removeAvailability(availabilities.indexOf(availability))}>
+                        <Text style={styles.removeButton}>✕</Text>
+                      </TouchableOpacity>
                     </View>
-                    <TouchableOpacity onPress={() => removeAvailability(availabilities.indexOf(availability))}>
-                      <Text style={styles.removeButton}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
-            </View>
-          )}
+                  );
+                })
+            ) : (
+              <Text style={styles.emptyText}>No availabilities added yet</Text>
+            )}
+          </View>
 
-          {availabilities.length > 0 && (
-            <TouchableOpacity style={styles.saveButton} onPress={handleSaveAllAvailabilities}>
-              <Text style={styles.saveButtonText}>Save All Availabilities</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity 
+            style={[styles.saveButton, availabilities.length === 0 && styles.saveButtonDisabled]} 
+            onPress={handleSaveAllAvailabilities}
+            disabled={availabilities.length === 0}
+          >
+            <Text style={[styles.saveButtonText, availabilities.length === 0 && styles.saveButtonTextDisabled]}>Save All Availabilities</Text>
+          </TouchableOpacity>
         </ScrollView>
 
         {/* Start Time Picker Modal */}
@@ -592,6 +596,19 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  saveButtonTextDisabled: {
+    color: '#999',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    padding: 20,
   },
   timeButton: {
     backgroundColor: 'white',
