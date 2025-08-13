@@ -42,3 +42,17 @@ export interface Listing {
   skill: SportSkill;
   createdAt: Date;
 }
+
+export interface RecurringListing {
+  id?: string;
+  teacherId: string;
+  dayOfWeek: number; // 0-6 for Sunday-Saturday
+  startTime: string; // HH:MM format
+  endTime: string; // HH:MM format
+  startDate: Date; // When recurrence begins
+  endDate: Date; // When recurrence ends
+  location: string;
+  price: number;
+  skill: SportSkill;
+  createdAt: Date;
+}
