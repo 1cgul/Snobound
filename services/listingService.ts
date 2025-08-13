@@ -5,6 +5,8 @@ import {
   where, 
   getDocs, 
   orderBy,
+  deleteDoc,
+  doc,
   Timestamp 
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -13,6 +15,7 @@ import { Listing, RecurringListing } from '../types';
 class ListingService {
   private collectionName = 'singleListings';
   private recurringCollectionName = 'recurringListings';
+  private exclusionCollectionName = 'exclusionListings';
 
   private timeToMinutes(time: string): number {
     const [hours, minutes] = time.split(':').map(Number);
@@ -219,6 +222,85 @@ class ListingService {
       return listings;
     } catch (error) {
       console.error('Error getting teacher recurring listings:', error);
+      throw error;
+    }
+  }
+
+  async deleteListing(listingId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, this.collectionName, listingId));
+    } catch (error) {
+      console.error('Error deleting listing:', error);
+      throw error;
+    }
+  }
+
+  async deleteRecurringListing(listingId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, this.recurringCollectionName, listingId));
+    } catch (error) {
+      console.error('Error deleting recurring listing:', error);
+      throw error;
+    }
+  }
+
+  async addExclusion(recurringListingId: string, date: string): Promise<void> {
+    try {
+      await addDoc(collection(db, this.exclusionCollectionName), {
+        recurringListingId,
+        date,
+        createdAt: Timestamp.now(),
+      });
+    } catch (error) {
+      console.error('Error adding exclusion:', error);
+      throw error;
+    }
+  }
+
+  async getExclusions(recurringListingId: string): Promise<string[]> {
+    try {
+      const q = query(
+        collection(db, this.exclusionCollectionName),
+        where('recurringListingId', '==', recurringListingId)
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => doc.data().date);
+    } catch (error) {
+      console.error('Error getting exclusions:', error);
+      return [];
+    }
+  }
+
+  async getAllTeacherExclusions(teacherId: string): Promise<{date: string, recurringListingId: string}[]> {
+    try {
+      const recurringListings = await this.getTeacherRecurringListings(teacherId);
+      const allExclusions: {date: string, recurringListingId: string}[] = [];
+      
+      for (const recur of recurringListings) {
+        const exclusions = await this.getExclusions(recur.id!);
+        exclusions.forEach(date => {
+          allExclusions.push({ date, recurringListingId: recur.id! });
+        });
+      }
+      
+      return allExclusions;
+    } catch (error) {
+      console.error('Error getting all teacher exclusions:', error);
+      return [];
+    }
+  }
+
+  async removeExclusion(recurringListingId: string, date: string): Promise<void> {
+    try {
+      const q = query(
+        collection(db, this.exclusionCollectionName),
+        where('recurringListingId', '==', recurringListingId),
+        where('date', '==', date)
+      );
+      const querySnapshot = await getDocs(q);
+      querySnapshot.forEach(doc => deleteDoc(doc.ref));
+    } catch (error) {
+      console.error('Error removing exclusion:', error);
       throw error;
     }
   }

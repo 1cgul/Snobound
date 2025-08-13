@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Modal,
   FlatList,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +26,7 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
   const [markedDates, setMarkedDates] = useState<any>({});
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [dayListings, setDayListings] = useState<Listing[]>([]);
+  const [dayExclusions, setDayExclusions] = useState<{date: string, recurringListingId: string}[]>([]);
   const [showDayModal, setShowDayModal] = useState(false);
 
   useEffect(() => {
@@ -33,20 +35,22 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
     }
   }, [user]);
 
-  const generateRecurringDates = (recurring: RecurringListing[]): Listing[] => {
+  const generateRecurringDates = async (recurring: RecurringListing[]): Promise<Listing[]> => {
     const generated: Listing[] = [];
     const today = new Date();
     
-    recurring.forEach(recur => {
+    for (const recur of recurring) {
+      const exclusions = await ListingService.getExclusions(recur.id!);
       let current = new Date(Math.max(recur.startDate.getTime(), today.getTime()));
       const end = recur.endDate;
       
       while (current <= end) {
-        if (current.getDay() === recur.dayOfWeek) {
+        const dateString = current.toISOString().split('T')[0];
+        if (current.getDay() === recur.dayOfWeek && !exclusions.includes(dateString)) {
           generated.push({
-            id: `${recur.id}-${current.toISOString().split('T')[0]}`,
+            id: `${recur.id}-${dateString}`,
             teacherId: recur.teacherId,
-            date: current.toISOString().split('T')[0],
+            date: dateString,
             startTime: recur.startTime,
             endTime: recur.endTime,
             location: recur.location,
@@ -57,7 +61,7 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
         }
         current.setDate(current.getDate() + 1);
       }
-    });
+    }
     
     return generated;
   };
@@ -66,15 +70,16 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
     try {
       const teacherId = user.uid || user.id || user.email;
       
-      const [singleListings, recurringListings] = await Promise.all([
+      const [singleListings, recurringListings, allExclusions] = await Promise.all([
         ListingService.getTeacherListings(teacherId),
-        ListingService.getTeacherRecurringListings(teacherId)
+        ListingService.getTeacherRecurringListings(teacherId),
+        ListingService.getAllTeacherExclusions(teacherId)
       ]);
       
       setListings(singleListings);
       setRecurringListings(recurringListings);
       
-      const generatedFromRecurring = generateRecurringDates(recurringListings);
+      const generatedFromRecurring = await generateRecurringDates(recurringListings);
       const allListings = [...singleListings, ...generatedFromRecurring];
       
       const marked: any = {};
@@ -83,6 +88,15 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
           marked: true,
           dotColor: '#007AFF',
           selectedColor: '#007AFF'
+        };
+      });
+      
+      // Mark exclusions with red dots
+      allExclusions.forEach(exclusion => {
+        marked[exclusion.date] = {
+          ...marked[exclusion.date],
+          marked: true,
+          dotColor: '#ff4444'
         };
       });
       
@@ -100,21 +114,88 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
-  const handleDayPress = (day: any) => {
+  const handleDayPress = async (day: any) => {
     const dateString = day.dateString;
     const singleDayListings = listings.filter(listing => listing.date === dateString);
-    const recurringDayListings = generateRecurringDates(recurringListings).filter(listing => listing.date === dateString);
+    const recurringDayListings = (await generateRecurringDates(recurringListings)).filter(listing => listing.date === dateString);
     const allDayListings = [...singleDayListings, ...recurringDayListings];
+    const exclusions = (await ListingService.getAllTeacherExclusions(user.uid || user.id || user.email)).filter(ex => ex.date === dateString);
     
-    if (allDayListings.length > 0) {
+    if (allDayListings.length > 0 || exclusions.length > 0) {
       setSelectedDate(dateString);
       setDayListings(allDayListings);
+      setDayExclusions(exclusions);
       setShowDayModal(true);
     }
   };
 
+  const deleteListing = async (listing: Listing) => {
+    if (listing.id?.includes('-')) {
+      // Recurring listing
+      Alert.alert(
+        'Delete Availability',
+        'How would you like to remove this availability?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Just This Date',
+            onPress: async () => {
+              try {
+                const recurringId = listing.id!.split('-')[0];
+                await ListingService.addExclusion(recurringId, listing.date);
+                loadListings();
+                setShowDayModal(false);
+              } catch (error) {
+                Alert.alert('Error', 'Failed to exclude date');
+              }
+            }
+          },
+          {
+            text: 'All Future',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const recurringId = listing.id!.split('-')[0];
+                await ListingService.deleteRecurringListing(recurringId);
+                loadListings();
+                setShowDayModal(false);
+              } catch (error) {
+                Alert.alert('Error', 'Failed to delete recurring listing');
+              }
+            }
+          }
+        ]
+      );
+    } else {
+      // Single listing
+      Alert.alert(
+        'Delete Listing',
+        'Are you sure you want to delete this availability?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await ListingService.deleteListing(listing.id!);
+                loadListings();
+                setShowDayModal(false);
+              } catch (error) {
+                Alert.alert('Error', 'Failed to delete listing');
+              }
+            }
+          }
+        ]
+      );
+    }
+  };
+
   const renderTimeSlot = ({ item }: { item: Listing }) => (
-    <View style={styles.timeSlot}>
+    <TouchableOpacity 
+      style={styles.timeSlot}
+      onLongPress={() => deleteListing(item)}
+    >
       <View style={styles.timeInfo}>
         <Text style={styles.timeText}>
           {formatTime(item.startTime)} - {formatTime(item.endTime)}
@@ -126,8 +207,9 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
       <View style={styles.priceLocationInfo}>
         <Text style={styles.priceText}>${item.price}/hr</Text>
         <Text style={styles.locationText}>{item.location}</Text>
+        <Text style={styles.deleteHint}>Hold to delete</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   if (!user.isTeacher) {
@@ -214,6 +296,42 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
               style={styles.timeSlotsList}
               showsVerticalScrollIndicator={false}
             />
+            
+            {dayExclusions.length > 0 && (
+              <View style={styles.exclusionsSection}>
+                <Text style={styles.exclusionsTitle}>Excluded Times</Text>
+                {dayExclusions.map((exclusion, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.exclusionItem}
+                    onLongPress={() => {
+                      Alert.alert(
+                        'Remove Exclusion',
+                        'Restore availability for this date?',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Restore',
+                            onPress: async () => {
+                              try {
+                                await ListingService.removeExclusion(exclusion.recurringListingId, exclusion.date);
+                                loadListings();
+                                setShowDayModal(false);
+                              } catch (error) {
+                                Alert.alert('Error', 'Failed to restore availability');
+                              }
+                            }
+                          }
+                        ]
+                      );
+                    }}
+                  >
+                    <Text style={styles.exclusionText}>🚫 Availability excluded</Text>
+                    <Text style={styles.exclusionHint}>Hold to restore</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -347,6 +465,40 @@ const styles = StyleSheet.create({
     color: '#999',
     maxWidth: 120,
     textAlign: 'right',
+  },
+  deleteHint: {
+    fontSize: 10,
+    color: '#ccc',
+    textAlign: 'right',
+    fontStyle: 'italic',
+  },
+  exclusionsSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  exclusionsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ff4444',
+    marginBottom: 10,
+  },
+  exclusionItem: {
+    backgroundColor: '#ffe6e6',
+    borderRadius: 8,
+    padding: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ff4444',
+  },
+  exclusionText: {
+    fontSize: 14,
+    color: '#cc0000',
+    fontWeight: '500',
+  },
+  exclusionHint: {
+    fontSize: 10,
+    color: '#999',
+    fontStyle: 'italic',
+    marginTop: 2,
   },
   card: {
     backgroundColor: 'white',
