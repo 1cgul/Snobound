@@ -8,6 +8,7 @@ import {
   Modal,
   FlatList,
   Alert,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,17 +25,32 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
   const [listings, setListings] = useState<Listing[]>([]);
   const [recurringListings, setRecurringListings] = useState<RecurringListing[]>([]);
   const [allAvailableListings, setAllAvailableListings] = useState<Listing[]>([]);
+  const [filteredListings, setFilteredListings] = useState<Listing[]>([]);
   const [markedDates, setMarkedDates] = useState<any>({});
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [dayListings, setDayListings] = useState<Listing[]>([]);
   const [dayExclusions, setDayExclusions] = useState<{date: string, recurringListingId: string}[]>([]);
   const [showDayModal, setShowDayModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filterStartDate, setFilterStartDate] = useState<string>('');
+  const [filterEndDate, setFilterEndDate] = useState<string>('');
+  const [filterSkill, setFilterSkill] = useState<string>('');
+  const [filterMinPrice, setFilterMinPrice] = useState<string>('');
+  const [filterMaxPrice, setFilterMaxPrice] = useState<string>('');
+  const [filterStartTime, setFilterStartTime] = useState<string>('');
+  const [filterEndTime, setFilterEndTime] = useState<string>('');
+  const [isSelectingStart, setIsSelectingStart] = useState(true);
+  const [currentFilterType, setCurrentFilterType] = useState<'date' | 'skill' | 'price' | 'time' | ''>('date');
 
   useEffect(() => {
     if (user.uid || user.id || user.email) {
       loadListings();
     }
   }, [user]);
+
+  useEffect(() => {
+    applyAllFilters();
+  }, [allAvailableListings, filterStartDate, filterEndDate, filterSkill, filterMinPrice, filterMaxPrice, filterStartTime, filterEndTime]);
 
   const generateRecurringDates = async (recurring: RecurringListing[]): Promise<Listing[]> => {
     const generated: Listing[] = [];
@@ -114,6 +130,7 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
         const combinedListings = [...allSingleListings, ...generatedFromRecurring];
         
         setAllAvailableListings(combinedListings);
+        setFilteredListings(combinedListings);
       }
     } catch (error) {
       console.error('Error loading listings:', error);
@@ -127,6 +144,69 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
     return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  const handleFilterDayPress = (day: any) => {
+    if (isSelectingStart) {
+      setFilterStartDate(day.dateString);
+      setIsSelectingStart(false);
+    } else {
+      setFilterEndDate(day.dateString);
+      applyFilter(filterStartDate, day.dateString);
+      setCurrentFilterType('date');
+      setIsSelectingStart(true);
+    }
+  };
+
+  const applyAllFilters = () => {
+    let filtered = [...allAvailableListings];
+    
+    if (filterStartDate && filterEndDate) {
+      filtered = filtered.filter(listing => listing.date >= filterStartDate && listing.date <= filterEndDate);
+    }
+    if (filterSkill) {
+      filtered = filtered.filter(listing => listing.skill === filterSkill);
+    }
+    if (filterMinPrice) {
+      filtered = filtered.filter(listing => listing.price >= parseFloat(filterMinPrice));
+    }
+    if (filterMaxPrice) {
+      filtered = filtered.filter(listing => listing.price <= parseFloat(filterMaxPrice));
+    }
+    if (filterStartTime && filterEndTime) {
+      filtered = filtered.filter(listing => listing.startTime >= filterStartTime && listing.endTime <= filterEndTime);
+    }
+    
+    setFilteredListings(filtered);
+  };
+
+  const applyFilter = (startDate: string, endDate: string) => {
+    if (!startDate || !endDate) return;
+    setFilterStartDate(startDate);
+    setFilterEndDate(endDate);
+  };
+
+  const addSkillFilter = (skill: string) => {
+    setFilterSkill(skill);
+  };
+
+  const addPriceFilter = () => {
+    // Filter automatically applied via useEffect
+  };
+
+  const addTimeFilter = () => {
+    // Filter automatically applied via useEffect
+  };
+
+  const clearFilter = () => {
+    setFilterStartDate('');
+    setFilterEndDate('');
+    setFilterSkill('');
+    setFilterMinPrice('');
+    setFilterMaxPrice('');
+    setFilterStartTime('');
+    setFilterEndTime('');
+    setFilteredListings(allAvailableListings);
   };
 
   const handleDayPress = async (day: any) => {
@@ -248,10 +328,42 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Available Lessons</Text>
+          <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
+            <Ionicons name="filter" size={20} color="white" />
+          </TouchableOpacity>
         </View>
+        {(filterStartDate || filterSkill || filterMinPrice || filterStartTime) && (
+          <View style={styles.filterInfo}>
+            <View style={styles.filterTags}>
+              {filterStartDate && filterEndDate && (
+                <TouchableOpacity style={styles.filterTag} onPress={() => {setFilterStartDate(''); setFilterEndDate('');}}>
+                  <Text style={styles.filterTagText}>📅 {new Date(filterStartDate).toLocaleDateString()} ✕</Text>
+                </TouchableOpacity>
+              )}
+              {filterSkill && (
+                <TouchableOpacity style={styles.filterTag} onPress={() => setFilterSkill('')}>
+                  <Text style={styles.filterTagText}>{filterSkill === 'snowboarding' ? '🏂' : '🎿'} {filterSkill} ✕</Text>
+                </TouchableOpacity>
+              )}
+              {(filterMinPrice || filterMaxPrice) && (
+                <TouchableOpacity style={styles.filterTag} onPress={() => {setFilterMinPrice(''); setFilterMaxPrice('');}}>
+                  <Text style={styles.filterTagText}>💰 ${filterMinPrice || '0'}-${filterMaxPrice || '∞'} ✕</Text>
+                </TouchableOpacity>
+              )}
+              {(filterStartTime && filterEndTime) && (
+                <TouchableOpacity style={styles.filterTag} onPress={() => {setFilterStartTime(''); setFilterEndTime('');}}>
+                  <Text style={styles.filterTagText}>⏰ {formatTime(filterStartTime)}-{formatTime(filterEndTime)} ✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <TouchableOpacity onPress={clearFilter}>
+              <Text style={styles.clearFilter}>Clear All</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         
         <FlatList
-          data={allAvailableListings}
+          data={filteredListings}
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.listingCard}>
               <View style={styles.listingHeader}>
@@ -280,6 +392,96 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
           style={styles.content}
           showsVerticalScrollIndicator={false}
         />
+
+        <Modal visible={showFilterModal} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+                  <Ionicons name="close" size={24} color="#666" />
+                </TouchableOpacity>
+                <Text style={styles.modalTitle}>Filters</Text>
+                <View style={{ width: 24 }} />
+              </View>
+              <ScrollView style={styles.filterOptions}>
+                <Text style={styles.filterSectionTitle}>📅 Date Range</Text>
+                <TouchableOpacity style={styles.filterOptionButton} onPress={() => setCurrentFilterType(currentFilterType === 'date' ? 'skill' : 'date')}>
+                  <Text style={styles.filterOptionText}>
+                    {filterStartDate && filterEndDate ? 
+                      `${new Date(filterStartDate).toLocaleDateString()} - ${new Date(filterEndDate).toLocaleDateString()}` : 
+                      'Select dates'}
+                  </Text>
+                  <Text style={styles.addFilterText}>Select Dates</Text>
+                </TouchableOpacity>
+                
+                {currentFilterType === 'date' && (
+                  <Calendar
+                    onDayPress={handleFilterDayPress}
+                    markedDates={{
+                      [filterStartDate]: { selected: true, selectedColor: '#007AFF' },
+                      [filterEndDate]: { selected: true, selectedColor: '#007AFF' }
+                    }}
+                    theme={{
+                      selectedDayBackgroundColor: '#007AFF',
+                      todayTextColor: '#007AFF',
+                      arrowColor: '#007AFF',
+                    }}
+                  />
+                )}
+                
+                <Text style={styles.filterSectionTitle}>🏂 Sport</Text>
+                {['snowboarding', 'skiing'].map(skill => (
+                  <TouchableOpacity key={skill} style={styles.filterOptionButton} onPress={() => addSkillFilter(skill)}>
+                    <Text style={styles.filterOptionText}>
+                      {skill === 'snowboarding' ? '🏂 Snowboarding' : '🎿 Skiing'}
+                    </Text>
+                    <Text style={styles.addFilterText}>Add Filter</Text>
+                  </TouchableOpacity>
+                ))}
+                
+                <Text style={styles.filterSectionTitle}>💰 Price Range</Text>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Min Price"
+                    value={filterMinPrice}
+                    onChangeText={setFilterMinPrice}
+                    keyboardType="numeric"
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Max Price"
+                    value={filterMaxPrice}
+                    onChangeText={setFilterMaxPrice}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <TouchableOpacity style={styles.addButton} onPress={addPriceFilter}>
+                  <Text style={styles.addButtonText}>Add Price Filter</Text>
+                </TouchableOpacity>
+                
+                <Text style={styles.filterSectionTitle}>⏰ Time Range</Text>
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Start Time (HH:MM)"
+                    value={filterStartTime}
+                    onChangeText={setFilterStartTime}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="End Time (HH:MM)"
+                    value={filterEndTime}
+                    onChangeText={setFilterEndTime}
+                  />
+                </View>
+                <TouchableOpacity style={styles.addButton} onPress={addTimeFilter}>
+                  <Text style={styles.addButtonText}>Add Time Filter</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -408,7 +610,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
-  addButton: {
+  filterButton: {
     backgroundColor: '#007AFF',
     borderRadius: 20,
     width: 40,
@@ -454,7 +656,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '70%',
+    height: '85%',
     paddingBottom: 34,
   },
   modalHeader: {
@@ -583,5 +785,94 @@ const styles = StyleSheet.create({
   },
   listingDetails: {
     marginBottom: 8,
+  },
+  filterInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#e6f2ff',
+  },
+  filterText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  clearFilter: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: 'bold',
+  },
+  filterTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    flex: 1,
+  },
+  filterTag: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  filterTagText: {
+    color: 'white',
+    fontSize: 12,
+  },
+  filterOptions: {
+    padding: 20,
+    flex: 1,
+  },
+  filterSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  filterOptionButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  filterOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  addFilterText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: 'bold',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+  },
+  addButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
