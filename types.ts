@@ -56,3 +56,20 @@ export interface RecurringListing {
   skill: SportSkill;
   createdAt: Date;
 }
+
+export interface Booking {
+  id?: string;
+  learnerId: string;
+  teacherId: string;
+  listingId: string;
+  date: string; // YYYY-MM-DD format
+  startTime: string; // HH:MM format
+  endTime: string; // HH:MM format
+  location: string;
+  price: number;
+  skill: SportSkill;
+  status: 'pending' | 'confirmed' | 'cancelled';
+  isRecurring?: boolean;
+  recurringListingId?: string;
+  createdAt: Date;
+}

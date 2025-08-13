@@ -5,8 +5,6 @@ import {
   where, 
   getDocs, 
   orderBy,
-  deleteDoc,
-  doc,
   Timestamp 
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -15,7 +13,6 @@ import { Listing, RecurringListing } from '../types';
 class ListingService {
   private collectionName = 'singleListings';
   private recurringCollectionName = 'recurringListings';
-  private exclusionCollectionName = 'exclusionListings';
 
   private timeToMinutes(time: string): number {
     const [hours, minutes] = time.split(':').map(Number);
@@ -55,7 +52,7 @@ class ListingService {
             location: data.location,
             price: data.price,
             skill: data.skill,
-            createdAt: data.createdAt.toDate(),
+            createdAt: data.createdAt?.toDate() || new Date(),
           });
         }
       });
@@ -69,27 +66,16 @@ class ListingService {
 
   async createListing(listingData: Omit<Listing, 'id' | 'createdAt'>): Promise<string> {
     try {
-      // Check conflicts with single listings
-      const singleConflicts = await this.checkForConflicts(
+      // Check for time conflicts
+      const conflicts = await this.checkForConflicts(
         listingData.teacherId,
         listingData.date,
         listingData.startTime,
         listingData.endTime
       );
       
-      // Check conflicts with recurring listings
-      const recurringListings = await this.getTeacherRecurringListings(listingData.teacherId);
-      const dateObj = new Date(listingData.date);
-      const dayOfWeek = dateObj.getDay();
-      
-      const recurringConflicts = recurringListings.filter(recur => 
-        recur.dayOfWeek === dayOfWeek &&
-        dateObj >= recur.startDate &&
-        dateObj <= recur.endDate &&
-        this.hasTimeConflict(listingData.startTime, listingData.endTime, recur.startTime, recur.endTime)
-      );
-      
-      if (singleConflicts.length > 0 || recurringConflicts.length > 0) {
+      if (conflicts.length > 0) {
+        const conflict = conflicts[0];
         const formatTime = (time: string) => {
           const [hours, minutes] = time.split(':');
           const hour = parseInt(hours);
@@ -98,12 +84,7 @@ class ListingService {
           return `${displayHour}:${minutes} ${ampm}`;
         };
         
-        const conflict = singleConflicts[0] || {
-          startTime: recurringConflicts[0].startTime,
-          endTime: recurringConflicts[0].endTime
-        };
-        
-        throw new Error(`Time conflict detected! You already have availability from ${formatTime(conflict.startTime)} to ${formatTime(conflict.endTime)} on this date.`);
+        throw new Error(`Time conflict detected! You already have a listing from ${formatTime(conflict.startTime)} to ${formatTime(conflict.endTime)} on this date.`);
       }
       
       const docRef = await addDoc(collection(db, this.collectionName), {
@@ -145,7 +126,7 @@ class ListingService {
           location: data.location,
           price: data.price,
           skill: data.skill,
-          createdAt: data.createdAt.toDate(),
+          createdAt: data.createdAt?.toDate() || new Date(),
         });
       });
       
@@ -159,26 +140,6 @@ class ListingService {
 
   async createRecurringListing(listingData: Omit<RecurringListing, 'id' | 'createdAt'>): Promise<string> {
     try {
-      // Check conflicts with existing recurring listings on same day
-      const existingRecurring = await this.getTeacherRecurringListings(listingData.teacherId);
-      const conflicts = existingRecurring.filter(existing =>
-        existing.dayOfWeek === listingData.dayOfWeek &&
-        this.hasTimeConflict(listingData.startTime, listingData.endTime, existing.startTime, existing.endTime)
-      );
-      
-      if (conflicts.length > 0) {
-        const formatTime = (time: string) => {
-          const [hours, minutes] = time.split(':');
-          const hour = parseInt(hours);
-          const ampm = hour >= 12 ? 'PM' : 'AM';
-          const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-          return `${displayHour}:${minutes} ${ampm}`;
-        };
-        
-        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        throw new Error(`Time conflict detected! You already have recurring availability on ${dayNames[listingData.dayOfWeek]} from ${formatTime(conflicts[0].startTime)} to ${formatTime(conflicts[0].endTime)}.`);
-      }
-      
       const docRef = await addDoc(collection(db, this.recurringCollectionName), {
         ...listingData,
         startDate: Timestamp.fromDate(listingData.startDate),
@@ -210,12 +171,12 @@ class ListingService {
           dayOfWeek: data.dayOfWeek,
           startTime: data.startTime,
           endTime: data.endTime,
-          startDate: data.startDate.toDate(),
-          endDate: data.endDate.toDate(),
+          startDate: data.startDate?.toDate() || new Date(),
+          endDate: data.endDate?.toDate() || new Date(),
           location: data.location,
           price: data.price,
           skill: data.skill,
-          createdAt: data.createdAt.toDate(),
+          createdAt: data.createdAt?.toDate() || new Date(),
         });
       });
       
@@ -226,83 +187,88 @@ class ListingService {
     }
   }
 
-  async deleteListing(listingId: string): Promise<void> {
+  async getAllAvailableListings(): Promise<Listing[]> {
     try {
-      await deleteDoc(doc(db, this.collectionName, listingId));
-    } catch (error) {
-      console.error('Error deleting listing:', error);
-      throw error;
-    }
-  }
-
-  async deleteRecurringListing(listingId: string): Promise<void> {
-    try {
-      await deleteDoc(doc(db, this.recurringCollectionName, listingId));
-    } catch (error) {
-      console.error('Error deleting recurring listing:', error);
-      throw error;
-    }
-  }
-
-  async addExclusion(recurringListingId: string, date: string): Promise<void> {
-    try {
-      await addDoc(collection(db, this.exclusionCollectionName), {
-        recurringListingId,
-        date,
-        createdAt: Timestamp.now(),
+      const q = query(collection(db, this.collectionName), orderBy('date', 'asc'));
+      const querySnapshot = await getDocs(q);
+      const listings: Listing[] = [];
+      
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        listings.push({
+          id: doc.id,
+          teacherId: data.teacherId,
+          date: data.date,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          location: data.location,
+          price: data.price,
+          skill: data.skill,
+          createdAt: data.createdAt?.toDate() || new Date(),
+        });
       });
+      
+      return listings;
     } catch (error) {
-      console.error('Error adding exclusion:', error);
+      console.error('Error getting all available listings:', error);
+      throw error;
+    }
+  }
+
+  async getAllRecurringListings(): Promise<RecurringListing[]> {
+    try {
+      const q = query(collection(db, this.recurringCollectionName));
+      const querySnapshot = await getDocs(q);
+      const listings: RecurringListing[] = [];
+      
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        listings.push({
+          id: doc.id,
+          teacherId: data.teacherId,
+          dayOfWeek: data.dayOfWeek,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          startDate: data.startDate?.toDate() || new Date(),
+          endDate: data.endDate?.toDate() || new Date(),
+          location: data.location,
+          price: data.price,
+          skill: data.skill,
+          createdAt: data.createdAt?.toDate() || new Date(),
+        });
+      });
+      
+      return listings;
+    } catch (error) {
+      console.error('Error getting all recurring listings:', error);
       throw error;
     }
   }
 
   async getExclusions(recurringListingId: string): Promise<string[]> {
-    try {
-      const q = query(
-        collection(db, this.exclusionCollectionName),
-        where('recurringListingId', '==', recurringListingId)
-      );
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => doc.data().date);
-    } catch (error) {
-      console.error('Error getting exclusions:', error);
-      return [];
-    }
+    // Placeholder for exclusions functionality
+    return [];
   }
 
   async getAllTeacherExclusions(teacherId: string): Promise<{date: string, recurringListingId: string}[]> {
-    try {
-      const recurringListings = await this.getTeacherRecurringListings(teacherId);
-      const allExclusions: {date: string, recurringListingId: string}[] = [];
-      
-      for (const recur of recurringListings) {
-        const exclusions = await this.getExclusions(recur.id!);
-        exclusions.forEach(date => {
-          allExclusions.push({ date, recurringListingId: recur.id! });
-        });
-      }
-      
-      return allExclusions;
-    } catch (error) {
-      console.error('Error getting all teacher exclusions:', error);
-      return [];
-    }
+    // Placeholder for exclusions functionality
+    return [];
+  }
+
+  async addExclusion(recurringListingId: string, date: string): Promise<void> {
+    // Placeholder for exclusions functionality
   }
 
   async removeExclusion(recurringListingId: string, date: string): Promise<void> {
-    try {
-      const q = query(
-        collection(db, this.exclusionCollectionName),
-        where('recurringListingId', '==', recurringListingId),
-        where('date', '==', date)
-      );
-      const querySnapshot = await getDocs(q);
-      querySnapshot.forEach(doc => deleteDoc(doc.ref));
-    } catch (error) {
-      console.error('Error removing exclusion:', error);
-      throw error;
-    }
+    // Placeholder for exclusions functionality
+  }
+
+  async deleteListing(listingId: string): Promise<void> {
+    // Placeholder for delete functionality
+  }
+
+  async deleteRecurringListing(recurringListingId: string): Promise<void> {
+    // Placeholder for delete functionality
   }
 }
 

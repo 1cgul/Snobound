@@ -23,6 +23,7 @@ interface BookingsScreenProps {
 export default function BookingsScreen({ user, onCreateListing }: BookingsScreenProps) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [recurringListings, setRecurringListings] = useState<RecurringListing[]>([]);
+  const [allAvailableListings, setAllAvailableListings] = useState<Listing[]>([]);
   const [markedDates, setMarkedDates] = useState<any>({});
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [dayListings, setDayListings] = useState<Listing[]>([]);
@@ -30,7 +31,7 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
   const [showDayModal, setShowDayModal] = useState(false);
 
   useEffect(() => {
-    if (user.isTeacher && (user.uid || user.id || user.email)) {
+    if (user.uid || user.id || user.email) {
       loadListings();
     }
   }, [user]);
@@ -68,45 +69,59 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
 
   const loadListings = async () => {
     try {
-      const teacherId = user.uid || user.id || user.email;
-      
-      const [singleListings, recurringListings, allExclusions] = await Promise.all([
-        ListingService.getTeacherListings(teacherId),
-        ListingService.getTeacherRecurringListings(teacherId),
-        ListingService.getAllTeacherExclusions(teacherId)
-      ]);
-      
-      setListings(singleListings);
-      setRecurringListings(recurringListings);
-      
-      const generatedFromRecurring = await generateRecurringDates(recurringListings);
-      const allListings = [...singleListings, ...generatedFromRecurring];
-      
-      const marked: any = {};
-      allListings.forEach(listing => {
-        marked[listing.date] = {
-          marked: true,
-          dotColor: '#007AFF',
-          selectedColor: '#007AFF'
-        };
-      });
-      
-      // Mark exclusions with red dots
-      allExclusions.forEach(exclusion => {
-        marked[exclusion.date] = {
-          ...marked[exclusion.date],
-          marked: true,
-          dotColor: '#ff4444'
-        };
-      });
-      
-      setMarkedDates(marked);
+      if (user.isTeacher) {
+        const teacherId = user.uid || user.id || user.email;
+        
+        const [singleListings, recurringListings, allExclusions] = await Promise.all([
+          ListingService.getTeacherListings(teacherId),
+          ListingService.getTeacherRecurringListings(teacherId),
+          ListingService.getAllTeacherExclusions(teacherId)
+        ]);
+        
+        setListings(singleListings);
+        setRecurringListings(recurringListings);
+        
+        const generatedFromRecurring = await generateRecurringDates(recurringListings);
+        const allListings = [...singleListings, ...generatedFromRecurring];
+        
+        const marked: any = {};
+        allListings.forEach(listing => {
+          marked[listing.date] = {
+            marked: true,
+            dotColor: '#007AFF',
+            selectedColor: '#007AFF'
+          };
+        });
+        
+        // Mark exclusions with red dots
+        allExclusions.forEach(exclusion => {
+          marked[exclusion.date] = {
+            ...marked[exclusion.date],
+            marked: true,
+            dotColor: '#ff4444'
+          };
+        });
+        
+        setMarkedDates(marked);
+      } else {
+        // For learners, show all available listings from all teachers
+        const [allSingleListings, allRecurringListings] = await Promise.all([
+          ListingService.getAllAvailableListings(),
+          ListingService.getAllRecurringListings()
+        ]);
+        
+        const generatedFromRecurring = await generateRecurringDates(allRecurringListings);
+        const combinedListings = [...allSingleListings, ...generatedFromRecurring];
+        
+        setAllAvailableListings(combinedListings);
+      }
     } catch (error) {
       console.error('Error loading listings:', error);
     }
   };
 
   const formatTime = (time: string) => {
+    if (!time || typeof time !== 'string') return 'N/A';
     const [hours, minutes] = time.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -116,16 +131,31 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
 
   const handleDayPress = async (day: any) => {
     const dateString = day.dateString;
-    const singleDayListings = listings.filter(listing => listing.date === dateString);
-    const recurringDayListings = (await generateRecurringDates(recurringListings)).filter(listing => listing.date === dateString);
-    const allDayListings = [...singleDayListings, ...recurringDayListings];
-    const exclusions = (await ListingService.getAllTeacherExclusions(user.uid || user.id || user.email)).filter(ex => ex.date === dateString);
     
-    if (allDayListings.length > 0 || exclusions.length > 0) {
-      setSelectedDate(dateString);
-      setDayListings(allDayListings);
-      setDayExclusions(exclusions);
-      setShowDayModal(true);
+    if (user.isTeacher) {
+      const singleDayListings = listings.filter(listing => listing.date === dateString);
+      const recurringDayListings = (await generateRecurringDates(recurringListings)).filter(listing => listing.date === dateString);
+      const allDayListings = [...singleDayListings, ...recurringDayListings];
+      const exclusions = (await ListingService.getAllTeacherExclusions(user.uid || user.id || user.email)).filter(ex => ex.date === dateString);
+      
+      if (allDayListings.length > 0 || exclusions.length > 0) {
+        setSelectedDate(dateString);
+        setDayListings(allDayListings);
+        setDayExclusions(exclusions);
+        setShowDayModal(true);
+      }
+    } else {
+      // For learners, show available listings for that day
+      const singleDayListings = listings.filter(listing => listing.date === dateString);
+      const recurringDayListings = (await generateRecurringDates(recurringListings)).filter(listing => listing.date === dateString);
+      const allDayListings = [...singleDayListings, ...recurringDayListings];
+      
+      if (allDayListings.length > 0) {
+        setSelectedDate(dateString);
+        setDayListings(allDayListings);
+        setDayExclusions([]);
+        setShowDayModal(true);
+      }
     }
   };
 
@@ -213,29 +243,43 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
   );
 
   if (!user.isTeacher) {
+    
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Bookings</Text>
+          <Text style={styles.title}>Available Lessons</Text>
         </View>
-        <ScrollView style={styles.content}>
-          <View style={styles.card}>
-            <Text style={styles.emoji}>📅</Text>
-            <Text style={styles.cardTitle}>Your Lessons & Sessions</Text>
-            <Text style={styles.cardDescription}>
-              View your booked lessons and upcoming sessions with instructors.
-            </Text>
-          </View>
-          <View style={styles.comingSoon}>
-            <Text style={styles.comingSoonTitle}>Coming Soon:</Text>
-            <Text style={styles.comingSoonText}>
-              • View upcoming bookings{'\n'}
-              • Book new lessons{'\n'}
-              • Cancel or reschedule{'\n'}
-              • View booking history
-            </Text>
-          </View>
-        </ScrollView>
+        
+        <FlatList
+          data={allAvailableListings}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.listingCard}>
+              <View style={styles.listingHeader}>
+                <Text style={styles.dateText}>
+                  {new Date(item.date).toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    month: 'short', 
+                    day: 'numeric' 
+                  })}
+                </Text>
+                <Text style={styles.timeText}>
+                  {formatTime(item.startTime)} - {formatTime(item.endTime)}
+                </Text>
+              </View>
+              <View style={styles.listingDetails}>
+                <Text style={styles.skillText}>
+                  {item.skill === 'snowboarding' ? '🏂' : '🎿'} {item.skill}
+                </Text>
+                <Text style={styles.locationText}>{item.location}</Text>
+                <Text style={styles.teacherText}>Teacher: {item.teacherId}</Text>
+              </View>
+              <Text style={styles.priceText}>${item.price}/hr</Text>
+            </TouchableOpacity>
+          )}
+          keyExtractor={(item) => item.id || ''}
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+        />
       </SafeAreaView>
     );
   }
@@ -243,8 +287,8 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Your Availability</Text>
-        {onCreateListing && (
+        <Text style={styles.title}>{user.isTeacher ? 'Your Availability' : 'Available Lessons'}</Text>
+        {user.isTeacher && onCreateListing && (
           <TouchableOpacity style={styles.addButton} onPress={onCreateListing}>
             <Ionicons name="add" size={24} color="white" />
           </TouchableOpacity>
@@ -267,7 +311,10 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
         </View>
         
         <Text style={styles.instructions}>
-          Tap on highlighted dates to view your availability for that day
+          {user.isTeacher 
+            ? 'Tap on highlighted dates to view your availability for that day'
+            : 'Tap on highlighted dates to view available lessons'
+          }
         </Text>
       </ScrollView>
 
@@ -472,6 +519,17 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     fontStyle: 'italic',
   },
+  bookingHint: {
+    fontSize: 10,
+    color: '#28a745',
+    textAlign: 'right',
+    fontStyle: 'italic',
+  },
+  teacherText: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
+  },
   exclusionsSection: {
     paddingHorizontal: 20,
     paddingBottom: 20,
@@ -500,61 +558,30 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 2,
   },
-  card: {
+  listingCard: {
     backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 30,
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  listingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 30,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    marginBottom: 8,
   },
-  emoji: {
-    fontSize: 48,
-    marginBottom: 15,
-  },
-  cardTitle: {
-    fontSize: 24,
+  dateText: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 15,
-    textAlign: 'center',
   },
-  cardDescription: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  comingSoon: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
-    marginBottom: 30,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  comingSoonTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  comingSoonText: {
-    fontSize: 16,
-    color: '#666',
-    lineHeight: 24,
+  listingDetails: {
+    marginBottom: 8,
   },
 });
