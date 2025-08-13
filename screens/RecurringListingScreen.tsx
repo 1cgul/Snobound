@@ -47,8 +47,10 @@ export default function RecurringListingScreen({ user, onBack, onSuccess }: Recu
   const [location, setLocation] = useState('');
   const [price, setPrice] = useState('');
   const [skill, setSkill] = useState<SportSkill>('snowboarding');
+  const [duration, setDuration] = useState(3); // months
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [showDurationPicker, setShowDurationPicker] = useState(false);
 
   const generateTimeOptions = () => {
     const times = [];
@@ -160,7 +162,8 @@ export default function RecurringListingScreen({ user, onBack, onSuccess }: Recu
 
     try {
       const startDate = new Date();
-      const endDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days from now
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + duration);
       
       const promises = availabilities.map(availability =>
         ListingService.createRecurringListing({
@@ -306,6 +309,17 @@ export default function RecurringListingScreen({ user, onBack, onSuccess }: Recu
             </View>
           </View>
 
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Duration</Text>
+            <TouchableOpacity 
+              style={styles.timeButton} 
+              onPress={() => setShowDurationPicker(true)}
+            >
+              <Text style={styles.timeButtonText}>{duration} month{duration !== 1 ? 's' : ''}</Text>
+              <Text style={styles.arrow}>▼</Text>
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity style={styles.addButton} onPress={addAvailability}>
             <Text style={styles.addButtonText}>Add to List</Text>
           </TouchableOpacity>
@@ -392,6 +406,34 @@ export default function RecurringListingScreen({ user, onBack, onSuccess }: Recu
                 {timeOptions.map((time) => (
                   <Picker.Item key={time} label={time} value={time} />
                 ))}
+              </Picker>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Duration Picker Modal */}
+        <Modal visible={showDurationPicker} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <TouchableOpacity onPress={() => setShowDurationPicker(false)}>
+                  <Text style={styles.modalButton}>Cancel</Text>
+                </TouchableOpacity>
+                <Text style={styles.modalTitle}>Duration</Text>
+                <TouchableOpacity onPress={() => setShowDurationPicker(false)}>
+                  <Text style={styles.modalButton}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <Picker
+                selectedValue={duration.toString()}
+                onValueChange={(value) => setDuration(parseInt(value))}
+                style={styles.modalPicker}
+              >
+                <Picker.Item label="1 month" value="1" />
+                <Picker.Item label="2 months" value="2" />
+                <Picker.Item label="3 months" value="3" />
+                <Picker.Item label="4 months" value="4" />
+                <Picker.Item label="5 months" value="5" />
               </Picker>
             </View>
           </View>
