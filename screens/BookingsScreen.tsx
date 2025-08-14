@@ -329,7 +329,7 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
         <View style={styles.header}>
           <Text style={styles.title}>Available Lessons</Text>
           <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
-            <Ionicons name="filter" size={20} color="white" />
+            <Ionicons name="funnel-outline" size={20} color="white" />
           </TouchableOpacity>
         </View>
         {(filterStartDate || filterSkill || filterMinPrice || filterStartTime) && (
