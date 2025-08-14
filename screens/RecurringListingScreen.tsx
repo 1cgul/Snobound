@@ -199,10 +199,10 @@ export default function RecurringListingScreen({ user, onBack, onSuccess }: Recu
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={onBack}>
-            <Text style={styles.backButton}>← Back</Text>
+            <Text style={styles.backButton}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Recurring Availability</Text>
-          <View style={styles.placeholder} />
+          <View style={{ width: 28 }} />
         </View>
 
         <ScrollView style={styles.content}>
@@ -457,12 +457,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 15,
-    paddingBottom: 25,
+    paddingTop: 10,
+    paddingBottom: 15,
     backgroundColor: '#f5f5f5',
   },
   backButton: {
-    fontSize: 16,
+    fontSize: 28,
     color: '#007AFF',
   },
   title: {
@@ -470,9 +470,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
-  placeholder: {
-    width: 50,
-  },
+
   content: {
     flex: 1,
     padding: 20,
@@ -529,7 +527,7 @@ const styles = StyleSheet.create({
   },
 
   addButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#007AFF',
     borderRadius: 8,
     padding: 15,
     alignItems: 'center',
