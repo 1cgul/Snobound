@@ -186,8 +186,8 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
     setFilterEndDate(endDate);
   };
 
-  const addSkillFilter = (skill: string) => {
-    setFilterSkill(skill);
+  const toggleSkillFilter = (skill: string) => {
+    setFilterSkill(filterSkill === skill ? '' : skill);
   };
 
   const addPriceFilter = () => {
@@ -405,13 +405,21 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
               </View>
               <ScrollView style={styles.filterOptions}>
                 <Text style={styles.filterSectionTitle}>📅 Date Range</Text>
-                <TouchableOpacity style={styles.filterOptionButton} onPress={() => setCurrentFilterType(currentFilterType === 'date' ? 'skill' : 'date')}>
+                <TouchableOpacity style={styles.filterOptionButton} onPress={() => {
+                  if (filterStartDate && filterEndDate) {
+                    setFilterStartDate(''); setFilterEndDate('');
+                  } else {
+                    setCurrentFilterType(currentFilterType === 'date' ? 'skill' : 'date');
+                  }
+                }}>
                   <Text style={styles.filterOptionText}>
                     {filterStartDate && filterEndDate ? 
                       `${new Date(filterStartDate).toLocaleDateString()} - ${new Date(filterEndDate).toLocaleDateString()}` : 
                       'Select dates'}
                   </Text>
-                  <Text style={styles.addFilterText}>Select Dates</Text>
+                  <Text style={[styles.addFilterText, (filterStartDate && filterEndDate) && styles.removeFilterText]}>
+                    {filterStartDate && filterEndDate ? 'Remove Filter' : 'Select Dates'}
+                  </Text>
                 </TouchableOpacity>
                 
                 {currentFilterType === 'date' && (
@@ -431,11 +439,13 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
                 
                 <Text style={styles.filterSectionTitle}>🏂 Sport</Text>
                 {['snowboarding', 'skiing'].map(skill => (
-                  <TouchableOpacity key={skill} style={styles.filterOptionButton} onPress={() => addSkillFilter(skill)}>
+                  <TouchableOpacity key={skill} style={styles.filterOptionButton} onPress={() => toggleSkillFilter(skill)}>
                     <Text style={styles.filterOptionText}>
                       {skill === 'snowboarding' ? '🏂 Snowboarding' : '🎿 Skiing'}
                     </Text>
-                    <Text style={styles.addFilterText}>Add Filter</Text>
+                    <Text style={[styles.addFilterText, filterSkill === skill && styles.removeFilterText]}>
+                      {filterSkill === skill ? 'Remove Filter' : 'Add Filter'}
+                    </Text>
                   </TouchableOpacity>
                 ))}
                 
@@ -456,8 +466,14 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
                     keyboardType="numeric"
                   />
                 </View>
-                <TouchableOpacity style={styles.addButton} onPress={addPriceFilter}>
-                  <Text style={styles.addButtonText}>Add Price Filter</Text>
+                <TouchableOpacity style={styles.addButton} onPress={() => {
+                  if (filterMinPrice || filterMaxPrice) {
+                    setFilterMinPrice(''); setFilterMaxPrice('');
+                  }
+                }}>
+                  <Text style={[styles.addButtonText, (filterMinPrice || filterMaxPrice) && styles.removeFilterText]}>
+                    {(filterMinPrice || filterMaxPrice) ? 'Remove Price Filter' : 'Add Price Filter'}
+                  </Text>
                 </TouchableOpacity>
                 
                 <Text style={styles.filterSectionTitle}>⏰ Time Range</Text>
@@ -475,8 +491,14 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
                     onChangeText={setFilterEndTime}
                   />
                 </View>
-                <TouchableOpacity style={styles.addButton} onPress={addTimeFilter}>
-                  <Text style={styles.addButtonText}>Add Time Filter</Text>
+                <TouchableOpacity style={styles.addButton} onPress={() => {
+                  if (filterStartTime && filterEndTime) {
+                    setFilterStartTime(''); setFilterEndTime('');
+                  }
+                }}>
+                  <Text style={[styles.addButtonText, (filterStartTime && filterEndTime) && styles.removeFilterText]}>
+                    {(filterStartTime && filterEndTime) ? 'Remove Time Filter' : 'Add Time Filter'}
+                  </Text>
                 </TouchableOpacity>
               </ScrollView>
             </View>
@@ -849,6 +871,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#007AFF',
     fontWeight: 'bold',
+  },
+  removeFilterText: {
+    color: '#ff4444',
   },
   inputRow: {
     flexDirection: 'row',
