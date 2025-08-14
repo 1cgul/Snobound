@@ -562,12 +562,16 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
               <Text style={styles.modalTitle}>
-                {selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                }) : ''}
+                {selectedDate ? (() => {
+                  const date = new Date(selectedDate);
+                  date.setDate(date.getDate() + 1);
+                  return date.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  });
+                })() : ''}
               </Text>
               <View style={{ width: 24 }} />
             </View>
