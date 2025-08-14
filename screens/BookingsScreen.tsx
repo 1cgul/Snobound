@@ -491,9 +491,9 @@ export default function BookingsScreen({ user, onCreateListing }: BookingsScreen
       <View style={styles.header}>
         <Text style={styles.title}>{user.isTeacher ? 'Your Availability' : 'Available Lessons'}</Text>
         {user.isTeacher && onCreateListing && (
-          <TouchableOpacity style={styles.addButton} onPress={onCreateListing}>
-            <Ionicons name="add" size={24} color="white" />
-          </TouchableOpacity>
+                     <TouchableOpacity style={styles.filterButton} onPress={onCreateListing}>
+             <Ionicons name="add" size={24} color="white" />
+           </TouchableOpacity>
         )}
       </View>
       
