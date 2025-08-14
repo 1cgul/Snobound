@@ -5,7 +5,10 @@ import {
   where, 
   getDocs, 
   orderBy,
-  Timestamp 
+  Timestamp,
+  doc,
+  deleteDoc,
+  getDoc
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Listing, RecurringListing } from '../types';
@@ -13,6 +16,7 @@ import { Listing, RecurringListing } from '../types';
 class ListingService {
   private collectionName = 'singleListings';
   private recurringCollectionName = 'recurringListings';
+  private exclusionsCollectionName = 'exclusionlistings';
 
   private timeToMinutes(time: string): number {
     const [hours, minutes] = time.split(':').map(Number);
@@ -246,29 +250,115 @@ class ListingService {
   }
 
   async getExclusions(recurringListingId: string): Promise<string[]> {
-    // Placeholder for exclusions functionality
-    return [];
+    try {
+      const q = query(
+        collection(db, this.exclusionsCollectionName),
+        where('recurringListingId', '==', recurringListingId)
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => doc.data().date);
+    } catch (error) {
+      console.error('Error getting exclusions:', error);
+      return [];
+    }
   }
 
   async getAllTeacherExclusions(teacherId: string): Promise<{date: string, recurringListingId: string}[]> {
-    // Placeholder for exclusions functionality
-    return [];
+    try {
+      const q = query(
+        collection(db, this.exclusionsCollectionName),
+        where('teacherId', '==', teacherId)
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        date: doc.data().date,
+        recurringListingId: doc.data().recurringListingId
+      }));
+    } catch (error) {
+      console.error('Error getting teacher exclusions:', error);
+      return [];
+    }
   }
 
   async addExclusion(recurringListingId: string, date: string): Promise<void> {
-    // Placeholder for exclusions functionality
+    try {
+      const recurringListing = await this.getRecurringListingById(recurringListingId);
+      if (!recurringListing) throw new Error('Recurring listing not found');
+      
+      await addDoc(collection(db, this.exclusionsCollectionName), {
+        recurringListingId,
+        teacherId: recurringListing.teacherId,
+        date,
+        createdAt: Timestamp.now()
+      });
+    } catch (error) {
+      console.error('Error adding exclusion:', error);
+      throw error;
+    }
   }
 
   async removeExclusion(recurringListingId: string, date: string): Promise<void> {
-    // Placeholder for exclusions functionality
+    try {
+      const q = query(
+        collection(db, this.exclusionsCollectionName),
+        where('recurringListingId', '==', recurringListingId),
+        where('date', '==', date)
+      );
+      const querySnapshot = await getDocs(q);
+      querySnapshot.forEach(async (docSnapshot) => {
+        await deleteDoc(doc(db, this.exclusionsCollectionName, docSnapshot.id));
+      });
+    } catch (error) {
+      console.error('Error removing exclusion:', error);
+      throw error;
+    }
+  }
+
+  private async getRecurringListingById(id: string): Promise<RecurringListing | null> {
+    try {
+      const docRef = doc(db, this.recurringCollectionName, id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          teacherId: data.teacherId,
+          dayOfWeek: data.dayOfWeek,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          startDate: data.startDate?.toDate() || new Date(),
+          endDate: data.endDate?.toDate() || new Date(),
+          location: data.location,
+          price: data.price,
+          skill: data.skill,
+          createdAt: data.createdAt?.toDate() || new Date(),
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting recurring listing by ID:', error);
+      return null;
+    }
   }
 
   async deleteListing(listingId: string): Promise<void> {
-    // Placeholder for delete functionality
+    try {
+      const docRef = doc(db, this.collectionName, listingId);
+      await deleteDoc(docRef);
+    } catch (error) {
+      console.error('Error deleting listing:', error);
+      throw error;
+    }
   }
 
   async deleteRecurringListing(recurringListingId: string): Promise<void> {
-    // Placeholder for delete functionality
+    try {
+      const docRef = doc(db, this.recurringCollectionName, recurringListingId);
+      await deleteDoc(docRef);
+    } catch (error) {
+      console.error('Error deleting recurring listing:', error);
+      throw error;
+    }
   }
 }
 
