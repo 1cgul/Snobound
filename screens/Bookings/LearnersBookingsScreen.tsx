@@ -185,7 +185,11 @@ export default function LearnersBookingsScreen({ user }: LearnersBookingsScreenP
                 {item.skill === 'snowboarding' ? '🏂' : '🎿'} {item.skill}
               </Text>
               <Text style={styles.locationText}>{item.location}</Text>
-              <Text style={styles.teacherText}>Teacher: 1</Text>
+              <Text style={styles.teacherText}>
+                Teacher: {item.teacherFirstName && item.teacherLastName 
+                  ? `${item.teacherFirstName} ${item.teacherLastName}` 
+                  : 'Loading...'}
+              </Text>
             </View>
             <Text style={styles.priceText}>${item.price}/hr</Text>
           </TouchableOpacity>

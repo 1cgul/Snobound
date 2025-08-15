@@ -25,6 +25,8 @@ export const generateRecurringDates = async (recurring: RecurringListing[]): Pro
         generated.push({
           id: `${recur.id}-${dateString}`,
           teacherId: recur.teacherId,
+          teacherFirstName: recur.teacherFirstName,
+          teacherLastName: recur.teacherLastName,
           date: dateString,
           startTime: recur.startTime,
           endTime: recur.endTime,

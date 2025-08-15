@@ -168,6 +168,8 @@ export default function RecurringListingScreen({ user, onBack, onSuccess }: Recu
       const promises = availabilities.map(availability =>
         ListingService.createRecurringListing({
           teacherId: user.uid || user.id || user.email,
+          teacherFirstName: user.firstName,
+          teacherLastName: user.lastName,
           dayOfWeek: availability.dayOfWeek,
           startTime: availability.startTime,
           endTime: availability.endTime,
