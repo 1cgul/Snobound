@@ -187,7 +187,7 @@ export default function LearnersBookingsScreen({ user }: LearnersBookingsScreenP
               <Text style={styles.locationText}>{item.location}</Text>
               <Text style={styles.teacherText}>
                 Teacher: {item.teacherFirstName && item.teacherLastName 
-                  ? `${item.teacherFirstName} ${item.teacherLastName}` 
+                  ? `${item.teacherFirstName} ${item.teacherLastName.charAt(0)}.` 
                   : 'Loading...'}
               </Text>
             </View>
