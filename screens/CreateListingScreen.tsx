@@ -76,6 +76,8 @@ export default function CreateListingScreen({ user, onBack, onSuccess }: CreateL
     try {
       await ListingService.createListing({
         teacherId: user.uid || user.id || user.email,
+        teacherFirstName: user.firstName,
+        teacherLastName: user.lastName,
         date,
         startTime: convertTo24Hour(startTime),
         endTime: convertTo24Hour(endTime),

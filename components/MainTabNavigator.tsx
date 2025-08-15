@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { User } from '../types';
 
 import HomeScreen from '../screens/HomeScreen';
-import BookingsScreen from '../screens/BookingsScreen';
+import BookingsScreen from '../screens/Bookings/BookingsScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SelectListingTypeScreen from '../screens/SelectListingTypeScreen';

@@ -34,6 +34,8 @@ export type SportSkill = 'snowboarding' | 'skiing';
 export interface Listing {
   id?: string;
   teacherId: string;
+  teacherFirstName: string;
+  teacherLastName: string;
   date: string; // YYYY-MM-DD format
   startTime: string; // HH:MM format
   endTime: string; // HH:MM format
@@ -46,6 +48,8 @@ export interface Listing {
 export interface RecurringListing {
   id?: string;
   teacherId: string;
+  teacherFirstName: string;
+  teacherLastName: string;
   dayOfWeek: number; // 0-6 for Sunday-Saturday
   startTime: string; // HH:MM format
   endTime: string; // HH:MM format

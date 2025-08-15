@@ -50,6 +50,8 @@ class ListingService {
           conflicts.push({
             id: doc.id,
             teacherId: data.teacherId,
+            teacherFirstName: data.teacherFirstName || '',
+            teacherLastName: data.teacherLastName || '',
             date: data.date,
             startTime: data.startTime,
             endTime: data.endTime,
@@ -124,6 +126,8 @@ class ListingService {
         listings.push({
           id: doc.id,
           teacherId: data.teacherId,
+          teacherFirstName: data.teacherFirstName || '',
+          teacherLastName: data.teacherLastName || '',
           date: data.date,
           startTime: data.startTime,
           endTime: data.endTime,
@@ -172,6 +176,8 @@ class ListingService {
         listings.push({
           id: doc.id,
           teacherId: data.teacherId,
+          teacherFirstName: data.teacherFirstName || '',
+          teacherLastName: data.teacherLastName || '',
           dayOfWeek: data.dayOfWeek,
           startTime: data.startTime,
           endTime: data.endTime,
@@ -202,6 +208,8 @@ class ListingService {
         listings.push({
           id: doc.id,
           teacherId: data.teacherId,
+          teacherFirstName: data.teacherFirstName || '',
+          teacherLastName: data.teacherLastName || '',
           date: data.date,
           startTime: data.startTime,
           endTime: data.endTime,
@@ -230,6 +238,8 @@ class ListingService {
         listings.push({
           id: doc.id,
           teacherId: data.teacherId,
+          teacherFirstName: data.teacherFirstName || '',
+          teacherLastName: data.teacherLastName || '',
           dayOfWeek: data.dayOfWeek,
           startTime: data.startTime,
           endTime: data.endTime,
@@ -323,6 +333,8 @@ class ListingService {
         return {
           id: docSnap.id,
           teacherId: data.teacherId,
+          teacherFirstName: data.teacherFirstName || '',
+          teacherLastName: data.teacherLastName || '',
           dayOfWeek: data.dayOfWeek,
           startTime: data.startTime,
           endTime: data.endTime,
